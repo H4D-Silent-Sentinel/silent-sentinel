@@ -7,6 +7,7 @@
 //   debug 0|1  print one line per audio frame (for bench / range tests)
 //   info       show settings
 //   tx         send a test heartbeat now
+//   raw        wiring check: raw I2S words and per-mic min/max
 //
 // LED: blue = listening, green flash = packet sent, red = drone confirmed,
 //      magenta = hardware fault (check serial output).
@@ -28,7 +29,7 @@ static int32_t *raw0, *raw1;           // interleaved stereo 32-bit slots
 static float *mic[N_CH];
 static uint8_t node_id = DEFAULT_NODE_ID;
 static uint16_t seq = 0;
-static bool debug_on = false, lora_ok = false;
+static bool debug_on = false, lora_ok = false, raw_req = false;
 static uint32_t next_report = 0, next_heartbeat = 0;
 static bool was_confirmed = false;
 static FrameResult last{};
@@ -134,6 +135,8 @@ static void console() {
     } else if (line == "info") {
       logf("Silent Sentinel node id=%d lora=%s fs=%d nfft=%d sf=%d bw=%.0fk\n", node_id,
                     lora_ok ? "ok" : "FAIL", FS, N_FFT, LORA_SF, LORA_BW_HZ / 1e3);
+    } else if (line == "raw") {
+      raw_req = true;
     } else if (line == "tx") {
       send(PKT_HEARTBEAT, last);
     }
@@ -190,6 +193,20 @@ void loop() {
   if (!read_hop(rx0, raw0) || !read_hop(rx1, raw1)) {
     logf("WARN: I2S read timeout\n");
     return;
+  }
+  if (raw_req) {  // wiring check: raw I2S words + per-mic peak
+    raw_req = false;
+    logf("RAW bus0 L/R: %08lx %08lx %08lx %08lx | bus1 L/R: %08lx %08lx %08lx %08lx\n",
+         (unsigned long)raw0[0], (unsigned long)raw0[1], (unsigned long)raw0[2], (unsigned long)raw0[3],
+         (unsigned long)raw1[0], (unsigned long)raw1[1], (unsigned long)raw1[2], (unsigned long)raw1[3]);
+    for (int c = 0; c < 4; c++) {
+      const int32_t *src = c < 2 ? raw0 : raw1;
+      int32_t mn = INT32_MAX, mx = INT32_MIN;
+      for (int n = 0; n < HOP; n++) { int32_t v = src[2 * n + (c & 1)] >> 8; mn = v < mn ? v : mn; mx = v > mx ? v : mx; }
+      logf("RAW mic%d min=%ld max=%ld %s\n", c, (long)mn, (long)mx,
+           (mn == 0 && mx == 0) ? "(all zero: no data / not connected)" :
+           (mn == -1 && mx == -1) ? "(all ones: data line stuck high)" : "(signal)");
+    }
   }
   deinterleave(raw0, mic[0], mic[1]);
   deinterleave(raw1, mic[2], mic[3]);
