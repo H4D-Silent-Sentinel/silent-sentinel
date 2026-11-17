@@ -25,7 +25,11 @@ def serial_reader(port: str, base, log=print, baud: int = 115200) -> threading.T
     def run():
         while True:
             try:
-                with serial.Serial(port, baud, timeout=1) as s:
+                s = serial.Serial()
+                s.port, s.baudrate, s.timeout = port, baud, 1
+                s.dtr = s.rts = False  # don't reset the ESP32 (or strap it into flash mode) on open
+                s.open()
+                with s:
                     log(f"serial: connected {port}")
                     while True:
                         raw = s.readline()

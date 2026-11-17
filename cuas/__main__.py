@@ -2,6 +2,7 @@
 
   python -m cuas run    --site sites/x.json --serial /dev/cu.usbserial-XXXX [--map] [--cot URL]
   python -m cuas sim    --site sites/x.json [--map] [--speed 4] [--no-camera]
+  python -m cuas listen --site sites/x.json [--map]   # laptop microphone acts as node 1 (demo / backup)
   python -m cuas detect recording.wav           # run the node detector on a recording
   python -m cuas ports                          # list serial ports
 """
@@ -84,6 +85,47 @@ def cmd_sim(args):
             pass
 
 
+def cmd_listen(args):
+    """Laptop microphone as a listening node: same detector, same packets."""
+    import queue
+
+    import numpy as np
+    import sounddevice as sd
+
+    from .base import Base
+    from .config import Site
+    from .detector import FS, HOP, CombDetector
+    from .reporter import Reporter
+
+    site = Site.load(args.site)
+    node_id = args.node or next(iter(site.nodes))
+    base = Base(site)
+    _outputs(args, base)
+    det, rep = CombDetector(), Reporter(node_id)
+    q: queue.Queue = queue.Queue()
+    stream = sd.InputStream(samplerate=FS, channels=1, blocksize=HOP, dtype="float32",
+                            callback=lambda data, *_: q.put(data[:, 0].copy()))
+    stream.start()  # keep `stream` referenced: if it's garbage-collected PortAudio crashes
+    print(f"listening on the laptop microphone as node {node_id}. Ctrl-C to stop.")
+    t0, last_step = time.time(), 0.0
+    try:
+        while True:
+            x = q.get()
+            r = det.process(np.repeat(x[None, :] * args.gain, 4, axis=0))
+            now = time.time()
+            for pkt in rep.update(r, int((now - t0) * 1000)):
+                base.on_packet(pkt, now)
+            if now - last_step >= 1.0:
+                base.step(now)
+                last_step = now
+            bar = "#" * int(max(0, min(40, r.score * 2)))
+            state = "DRONE" if r.confirmed else ("hit  " if r.hit else "     ")
+            print(f"\r{state} f0 {r.f0:6.1f} Hz  comb {r.score:5.1f} dB  harmonics {r.n_harm:2d}  "
+                  f"level {r.level_db:5.1f}  {bar:<40}", end="", flush=True)
+    except KeyboardInterrupt:
+        print()
+
+
 def cmd_detect(args):
     import numpy as np
     from scipy.io import wavfile
@@ -141,6 +183,11 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--quiet", action="store_true")
     outputs(p); p.set_defaults(fn=cmd_sim)
+
+    p = sub.add_parser("listen"); p.add_argument("--site", required=True)
+    p.add_argument("--node", type=int, help="node id to appear as (default: first in site)")
+    p.add_argument("--gain", type=float, default=1.0)
+    outputs(p); p.set_defaults(fn=cmd_listen)
 
     p = sub.add_parser("detect"); p.add_argument("wav"); p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(fn=cmd_detect)
