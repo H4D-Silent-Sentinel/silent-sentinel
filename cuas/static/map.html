@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silent Sentinel Base</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root { --bg:#0e1419; --panel:#151d24; --fg:#e2e9ee; --muted:#8e9daa; --line:#26333d;
+          --node:#6ea8ff; --det:#ff6b5e; --off:#5b6773; --trk:#ffb02e; --vis:#5cc77a; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg);
+    font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #app { display: grid; grid-template-columns: 1fr 320px; height: 100%; }
+  #map { height: 100%; background: #0b1014; }
+  aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 14px 16px; }
+  h1 { font-size: 16px; margin: 0 0 2px; letter-spacing: .02em; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 6px; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .row { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .num { font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .pill { font-size: 10px; padding: 1px 6px; border-radius: 99px; border: 1px solid currentColor; margin-left: 4px; }
+  .empty { color: var(--muted); padding: 6px 0; }
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.3); }
+  .leaflet-container { font: inherit; }
+  @media (max-width: 760px) { #app { grid-template-columns: 1fr; grid-template-rows: 60% 40%; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <aside>
+    <h1>Silent Sentinel</h1>
+    <div class="sub" id="site">connecting…</div>
+    <h2>Tracks</h2><div id="tracks"></div>
+    <h2>Acoustic nodes</h2><div id="nodes"></div>
+    <h2>Cameras</h2><div id="cams"></div>
+  </aside>
+</div>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const map = L.map('map', { zoomControl: true });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxZoom: 20, maxNativeZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+const layer = L.layerGroup().addTo(map);
+let centred = false;
+
+function dest(lat, lon, azDeg, m) {
+  const a = azDeg * Math.PI / 180, R = 6371000;
+  return [lat + (m * Math.cos(a) / R) * 180 / Math.PI,
+          lon + (m * Math.sin(a) / (R * Math.cos(lat * Math.PI / 180))) * 180 / Math.PI];
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(s) {
+  if (!centred) { map.setView(s.origin, 18); centred = true; }
+  document.getElementById('site').textContent = s.site + ' · ' + new Date(s.t * 1000).toLocaleTimeString();
+  layer.clearLayers();
+
+  for (const f of s.fixes) L.circle([f.lat, f.lon], { radius: Math.max(5, f.sigma_m), color: css('--trk'),
+      weight: 1, opacity: .25 * (1 - f.age / 15), fill: false }).addTo(layer);
+  for (const v of s.visual) L.polyline([[v.lat, v.lon], dest(v.lat, v.lon, v.az, 400)],
+      { color: css('--vis'), weight: 2, opacity: .7, dashArray: '6 4' }).addTo(layer);
+
+  const nodeRows = [];
+  for (const n of s.nodes) {
+    const col = !n.online ? css('--off') : n.detecting ? css('--det') : css('--node');
+    L.circleMarker([n.lat, n.lon], { radius: 7, color: col, fillColor: col, fillOpacity: .9, weight: 2 })
+      .bindTooltip(`Node ${n.id} ${esc(n.label)}`).addTo(layer);
+    const right = n.detecting ? `${n.level_db.toFixed(0)} dB · ${n.f0.toFixed(0)} Hz`
+                : n.online ? `bg ${n.floor_db?.toFixed(0) ?? '–'} dB` : 'offline';
+    nodeRows.push(`<div class="row"><span class="dot" style="background:${col}"></span>
+      <span>${n.id} · ${esc(n.label)}</span><span class="num">${right}</span></div>`);
+  }
+  document.getElementById('nodes').innerHTML = nodeRows.join('');
+
+  const trkRows = [];
+  for (const t of s.tracks) {
+    const col = css('--trk'), op = t.confirmed ? 1 : .45;
+    if (t.history.length > 1) L.polyline(t.history, { color: col, weight: 2, opacity: .5 * op }).addTo(layer);
+    L.circle([t.lat, t.lon], { radius: 2 * t.sigma_m, color: col, weight: 1, opacity: .7 * op,
+      fillOpacity: .08 * op }).addTo(layer);
+    const sp = Math.hypot(t.ve, t.vn), crs = (Math.atan2(t.ve, t.vn) * 180 / Math.PI + 360) % 360;
+    L.polyline([[t.lat, t.lon], dest(t.lat, t.lon, crs, sp * 10)], { color: col, weight: 2, opacity: op }).addTo(layer);
+    L.circleMarker([t.lat, t.lon], { radius: 6, color: col, fillColor: col, fillOpacity: op, weight: 2 })
+      .bindTooltip(`Track ${t.id}${t.label ? ' · ' + esc(t.label) : ''}`, { permanent: t.confirmed, direction: 'right' })
+      .addTo(layer);
+    trkRows.push(`<div class="row"><span class="dot" style="background:${col};opacity:${op}"></span>
+      <span>Track ${t.id}${t.label ? ' · ' + esc(t.label) : ''}${t.confirmed ? '' : '<span class="pill">tentative</span>'}
+      <br><span class="sub">${t.sources.map(esc).join(', ')}${t.coast_s > 3 ? ` · coasting ${t.coast_s.toFixed(0)} s` : ''}</span></span>
+      <span class="num">±${t.sigma_m.toFixed(0)} m<br>${sp.toFixed(1)} m/s</span></div>`);
+  }
+  document.getElementById('tracks').innerHTML = trkRows.join('') || '<div class="empty">No drones tracked.</div>';
+
+  const cams = {};
+  for (const v of s.visual) cams[v.src] = v;
+  document.getElementById('cams').innerHTML = Object.values(cams).map(v =>
+    `<div class="row"><span class="dot" style="background:${css('--vis')}"></span><span>${esc(v.src)}</span>
+     <span class="num">${v.az.toFixed(0)}° ${esc(v.label || v.cls)}</span></div>`).join('')
+    || '<div class="empty">No camera reports in the last 5 s.</div>';
+}
+
+async function poll() {
+  try { render(await (await fetch('/state.json', { cache: 'no-store' })).json()); }
+  catch (e) { document.getElementById('site').textContent = 'base not responding'; }
+  setTimeout(poll, 1000);
+}
+poll();
+</script>
+</body>
+</html>
