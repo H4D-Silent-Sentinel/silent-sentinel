@@ -41,7 +41,7 @@ def esp(pin):  # free hole beside an ESP32 pin
     return f"a{ESP_ROW[pin]}"
 
 
-MIC_PINS = ["3V", "GND", "BCLK", "DOUT", "LRCL", "SEL"]  # assumed silkscreen order; verify
+MIC_PINS = ["SEL", "LRCL", "DOUT", "BCLK", "GND", "3V"]  # order printed on the board (team-verified)
 M_TOP = 4
 LORA_PINS = ["VIN", "GND", "EN", "G0", "SCK", "MISO", "MOSI", "CS", "RST"]
 L_TOP = 21
@@ -51,21 +51,21 @@ WIRES = [
     # power for the whole board
     (esp("3V3"), "L+40", "--w-pwr", "ESP32 3V3 → + rail", 1),
     (esp("GND"), "L-61", "--w-gnd", "ESP32 GND → − rail", 1),
-    # mic power + select
-    ("b4", "L+2", "--w-pwr", "Mic 3V row → + rail", 2),
-    ("b5", "L-1", "--w-gnd", "Mic GND row → − rail", 2),
-    ("b9", "L-11", "--w-gnd", "M0 SEL → − rail (left channel)", 2),
+    # mic power + select (rows: 4 SEL, 5 LRCL, 6 DOUT, 7 BCLK, 8 GND, 9 3V)
+    ("b9", "L+12", "--w-pwr", "Mic 3V row → + rail", 2),
+    ("b8", "L-11", "--w-gnd", "Mic GND row → − rail", 2),
+    ("b4", "L-2", "--w-gnd", "M0 SEL → − rail (left channel)", 2),
     # mic signals to the ESP32
-    ("b6", esp("IO4"), "--w-bclk", "BCLK → IO4", 2),
-    ("b8", esp("IO5"), "--w-ws", "LRCL → IO5", 2),
-    ("b7", esp("IO6"), "--w-sd", "DOUT → IO6", 2),
-    # bridge rows 4-8 across the centre channel so M1 shares them
-    ("e4", "f4", "--w-pwr", "bridge 3V", 2),
-    ("e5", "f5", "--w-gnd", "bridge GND", 2),
-    ("e6", "f6", "--w-bclk", "bridge BCLK", 2),
-    ("e7", "f7", "--w-sd", "bridge DOUT", 2),
-    ("e8", "f8", "--w-ws", "bridge LRCL", 2),
-    ("i9", "i4", "--w-pwr", "M1 SEL → 3V row (right channel)", 2),
+    ("b7", esp("IO4"), "--w-bclk", "BCLK → IO4", 2),
+    ("b5", esp("IO5"), "--w-ws", "LRCL → IO5", 2),
+    ("b6", esp("IO6"), "--w-sd", "DOUT → IO6", 2),
+    # bridge rows 5-9 across the centre channel so M1 shares them (row 4, SEL, stays separate)
+    ("e5", "f5", "--w-ws", "bridge LRCL", 2),
+    ("e6", "f6", "--w-sd", "bridge DOUT", 2),
+    ("e7", "f7", "--w-bclk", "bridge BCLK", 2),
+    ("e8", "f8", "--w-gnd", "bridge GND", 2),
+    ("e9", "f9", "--w-pwr", "bridge 3V", 2),
+    ("i4", "i9", "--w-pwr", "M1 SEL → 3V row (right channel)", 2),
     # LoRa
     (f"f{L_TOP}", esp("3V3_1"), "--w-pwr", "RFM95W VIN → ESP32 3V3", 3),
     (f"f{L_TOP + 1}", "L-30", "--w-gnd", "RFM95W GND → − rail", 3),
@@ -280,7 +280,7 @@ li { max-width: 70ch; }
 
 <div class="note">
   <p><strong>Unplug the USB cable while you wire.</strong> Everything runs on 3.3 V from the ESP32; nothing goes to the 5V pin.</p>
-  <p><strong>Check the mic pin order.</strong> The drawing assumes the mic's six pins read 3V, GND, BCLK, DOUT, LRCL, SEL from top to bottom. If yours are in a different order, keep the rows the same and wire by the labels printed on the mic board.</p>
+  <p><strong>Mic orientation.</strong> The pin labels are printed on the underside, so you can't read them once a mic is plugged in. Before you push each mic in, find the <strong>SEL</strong> end: SEL goes in <strong>row 4</strong>, 3V ends up in <strong>row 9</strong>.</p>
 </div>
 
 <div class="grid">
@@ -290,8 +290,8 @@ li { max-width: 70ch; }
       <h3><span class="n">0</span>Place the parts</h3>
       <ol>
         <li><strong>ESP32-S3:</strong> USB ports toward row 63. Its left header (J1, labelled 3V3, 3V3, RST, 4, 5, 6 …) goes in <strong>column b, rows 40–61</strong>, so <code>b40</code> is 3V3 and <code>b61</code> is GND. Column a stays free: that's where every wire to the ESP32 plugs in.</li>
-        <li><strong>Mic M0:</strong> its 6 pins in <strong>column a, rows 4–9</strong>, board hanging out to the left over the rails, sound hole facing up.</li>
-        <li><strong>Mic M1:</strong> its 6 pins in <strong>column j, rows 4–9</strong>, hanging out to the right.</li>
+        <li><strong>Mic M0:</strong> its 6 pins in <strong>column a, rows 4–9</strong> (SEL in row 4), board hanging out to the left over the rails.</li>
+        <li><strong>Mic M1:</strong> its 6 pins in <strong>column j, rows 4–9</strong> (SEL in row 4), hanging out to the right.</li>
         <li><strong>RFM95W (optional today):</strong> its 9-pin edge in <strong>column j, rows 21–29</strong> (VIN at row 21), module hanging out to the right. Only that edge needs a header.</li>
         <li>If the red/blue rail lines have a break halfway down the board, bridge each rail across the break with a short jumper.</li>
       </ol>
