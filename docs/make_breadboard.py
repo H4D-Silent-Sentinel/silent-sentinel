@@ -42,39 +42,28 @@ def esp(pin):  # free hole beside an ESP32 pin
 
 
 MIC_PINS = ["SEL", "LRCL", "DOUT", "BCLK", "GND", "3V"]  # order printed on the board (team-verified)
-M_TOP = 4
+M_TOP = 1
 LORA_PINS = ["VIN", "GND", "EN", "G0", "SCK", "MISO", "MOSI", "CS", "RST"]
 L_TOP = 21
 
-# (from, to, color var, label, step)
+# Demo build (17 Nov): one mic (M1) in j1-j6 + RFM95W in j21-j29, wires from column h
+# (h is two holes from the parts, so jumper heads fit). No rails used.
+# (from, to, color var, colour name, label, step)
 WIRES = [
-    # power for the whole board
-    (esp("3V3"), "L+40", "--w-pwr", "ESP32 3V3 → + rail", 1),
-    (esp("GND"), "L-61", "--w-gnd", "ESP32 GND → − rail", 1),
-    # mic power + select (rows: 4 SEL, 5 LRCL, 6 DOUT, 7 BCLK, 8 GND, 9 3V)
-    ("d9", "L+12", "--w-pwr", "Mic 3V row → + rail", 2),
-    ("d8", "L-11", "--w-gnd", "Mic GND row → − rail", 2),
-    ("d4", "L-2", "--w-gnd", "M0 SEL → − rail (left channel)", 2),
-    # mic signals to the ESP32
-    ("d7", esp("IO4"), "--w-bclk", "BCLK → IO4", 2),
-    ("d5", esp("IO5"), "--w-ws", "LRCL → IO5", 2),
-    ("d6", esp("IO6"), "--w-sd", "DOUT → IO6", 2),
-    # bridge rows 5-9 across the centre channel so M1 shares them (row 4, SEL, stays separate)
-    ("e5", "f5", "--w-ws", "bridge LRCL", 2),
-    ("e6", "f6", "--w-sd", "bridge DOUT", 2),
-    ("e7", "f7", "--w-bclk", "bridge BCLK", 2),
-    ("e8", "f8", "--w-gnd", "bridge GND", 2),
-    ("e9", "f9", "--w-pwr", "bridge 3V", 2),
-    ("g4", "g9", "--w-pwr", "M1 SEL → 3V row (right channel)", 2),
-    # LoRa
-    (f"f{L_TOP}", esp("3V3_1"), "--w-pwr", "RFM95W VIN → ESP32 3V3", 3),
-    (f"f{L_TOP + 1}", "L-30", "--w-gnd", "RFM95W GND → − rail", 3),
-    (f"g{L_TOP + 3}", esp("IO8"), "--w-ctl", "G0 → IO8", 3),
-    (f"g{L_TOP + 4}", esp("IO12"), "--w-spi", "SCK → IO12", 3),
-    (f"g{L_TOP + 5}", esp("IO13"), "--w-spi", "MISO → IO13", 3),
-    (f"g{L_TOP + 6}", esp("IO11"), "--w-spi", "MOSI → IO11", 3),
-    (f"g{L_TOP + 7}", esp("IO10"), "--w-ctl", "CS → IO10", 3),
-    (f"g{L_TOP + 8}", esp("IO9"), "--w-ctl", "RST → IO9", 3),
+    ("h6", esp("3V3_1"), "--c-red", "Red", "Mic 3V → ESP32 3V3", 1),
+    ("h5", esp("GND"), "--c-black", "Black", "Mic GND → ESP32 GND", 1),
+    ("h1", esp("3V3"), "--c-orange", "Orange", "Mic SEL → 3V3 (sets it as the right-channel mic)", 1),
+    ("h4", esp("IO4"), "--c-yellow", "Yellow", "BCLK → IO4", 1),
+    ("h2", esp("IO5"), "--c-green", "Green", "LRCL → IO5", 1),
+    ("h3", esp("IO6"), "--c-blue", "Blue", "DOUT → IO6", 1),
+    ("f6", f"f{L_TOP}", "--c-red", "Red", "Radio VIN ← mic 3V row", 2),
+    ("f5", f"f{L_TOP + 1}", "--c-black", "Black", "Radio GND ← mic GND row", 2),
+    (f"h{L_TOP + 3}", esp("IO8"), "--c-white", "White", "G0 → IO8", 2),
+    (f"h{L_TOP + 4}", esp("IO12"), "--c-purple", "Purple", "SCK → IO12", 2),
+    (f"h{L_TOP + 5}", esp("IO13"), "--c-gray", "Gray", "MISO → IO13", 2),
+    (f"h{L_TOP + 6}", esp("IO11"), "--c-blue", "Blue", "MOSI → IO11", 2),
+    (f"h{L_TOP + 7}", esp("IO10"), "--c-orange", "Orange", "CS → IO10", 2),
+    (f"h{L_TOP + 8}", esp("IO9"), "--c-yellow", "Yellow", "RST → IO9", 2),
 ]
 
 
@@ -110,7 +99,7 @@ def svg():
     o.append(f'<text class="parttxt" x="{(col_x("e")+col_x("i"))/2+2}" y="{ey0+8+P*3+4}" text-anchor="middle">ESP32-S3</text>')
     for i, name in enumerate(J1):
         x, y = col_x("b"), row_y(ESP_TOP + i)
-        used = any(esp(n) == f"a{ESP_TOP+i}" for n in ("3V3", "GND", "IO4", "IO5", "IO6", "IO8", "IO9", "IO10", "IO11", "IO12", "IO13", "3V3_1"))
+        used = any(w[1] == f"a{ESP_TOP+i}" for w in WIRES)
         o.append(f'<rect class="pinsq{" on" if used else ""}" x="{x-3.5}" y="{y-3.5}" width="7" height="7"/>')
         o.append(f'<text class="pintxt{" on" if used else ""}" x="{x+8}" y="{y+3.5}">{name}</text>')
         o.append(f'<rect class="pinsq" x="{col_x("j")-3.5}" y="{y-3.5}" width="7" height="7"/>')
@@ -136,8 +125,7 @@ def svg():
             o.append(f'<rect class="pinsq on" x="{x-3.5}" y="{y-3.5}" width="7" height="7"/>')
             tx = x - 9 if side == "L" else x + 9
             o.append(f'<text class="pintxt on micpin" x="{tx}" y="{y+3}" text-anchor="{"end" if side=="L" else "start"}">{p}</text>')
-    mic("M0", "c", "L")
-    mic("M1", "h", "R")
+    mic("MIC", "j", "R")
 
     # LoRa: 9-pin header in column j, module hangs out to the right
     x = col_x("j")
@@ -152,45 +140,39 @@ def svg():
     o.append(f'<path class="ant" d="M{x-7+bw} {row_y(L_TOP)} h18 v-70"/>')
     o.append(f'<text class="tiny" x="{x-7+bw+22}" y="{row_y(L_TOP)-74}">78 mm wire</text>')
 
-    # later: M2/M3
-    o.append(f'<rect class="later" x="{col_x("a")-P*3}" y="{row_y(13)-10}" width="{col_x("j")-col_x("a")+P*6}" height="{P*5+20}" rx="5"/>')
-    o.append(f'<text class="tiny" x="{(col_x("a")+col_x("j"))/2}" y="{row_y(16)+4}" text-anchor="middle">rows 13–17: M2 + M3 later</text>')
-
     # wires
-    lora_targets = [b for a, b, *_ in WIRES if a[0] in "fg" and b.startswith("a")]
-    mic_targets = [b for a, b, *_ in WIRES if a[0] == "d" and b.startswith("a")]
-    for a, b, var, _, step in WIRES:
+    mic_w = sorted([w for w in WIRES if w[5] == 1], key=lambda w: int(w[1][1:]))
+    lora_w = sorted([w for w in WIRES if w[0][0] == "h" and w[5] == 2], key=lambda w: int(w[1][1:]))
+    for a, b, var, *_ in WIRES:
         (x1, y1), (x2, y2) = hole(a), hole(b)
-        if abs(y1 - y2) < 1:
-            d = f"M{x1} {y1} L{x2} {y2}"
-        elif a[0] == "d" and b.startswith("a"):  # mic signal down to the ESP32
-            lane = col_x("d") + 3 + mic_targets.index(b) * 4
+        if a[0] == "f" and b[0] == "f":  # radio power taps, run down beside column f
+            lane = col_x("f") + (6 if a == "f6" else -6)
             d = f"M{x1} {y1} H{lane} V{y2} H{x2}"
-        elif a[0] in "fg" and b.startswith("a"):  # radio line round the left of the rails
-            lane = RAIL["L-"] - 10 - lora_targets.index(b) * 4.5
+        elif (a, b) in [(w[0], w[1]) for w in mic_w]:  # mic line down the centre channel
+            k = [w[1] for w in mic_w].index(b)
+            lane = col_x("e") + 6 + k * 4.5
             d = f"M{x1} {y1} H{lane} V{y2} H{x2}"
-        elif a[0] == "g" and b[0] == "g":  # M1 SEL loop
-            d = f"M{x1} {y1} C{x1+22} {y1} {x2+22} {y2} {x2} {y2}"
-        else:  # short hop to a rail
-            d = f"M{x1} {y1} C{(x1+x2)/2} {y1} {(x1+x2)/2} {y2} {x2} {y2}"
+        else:  # radio line round the left of the board
+            k = [w[1] for w in lora_w].index(b)
+            lane = RAIL["L-"] - 26 + k * 4.5
+            d = f"M{x1} {y1} H{lane} V{y2} H{x2}"
         o.append(f'<path class="wire" d="{d}" style="stroke:var({var})"/>')
         for x, y in ((x1, y1), (x2, y2)):
             o.append(f'<circle class="end" cx="{x}" cy="{y}" r="3.6" style="fill:var({var})"/>')
-    return (f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Breadboard layout for the first Silent Sentinel node">'
+    return (f'<svg viewBox="-20 0 {W+20} {H}" role="img" aria-label="Breadboard layout for the first Silent Sentinel node">'
             + "".join(o) + "</svg>")
 
 
 def table():
-    steps = {1: "Board power", 2: "Microphones M0 + M1", 3: "LoRa radio (optional today)"}
+    steps = {1: "Microphone", 2: "LoRa radio (RFM95W)"}
     out = []
-    for s, title in steps.items():
-        rows = [w for w in WIRES if w[4] == s]
-        out.append(f'<section class="step"><h3><span class="n">{s}</span>{title}</h3><table><tr><th>From</th><th>To</th><th>What it is</th></tr>')
-        for a, b, var, lab, _ in rows:
-            def fmt(h):
-                return f"{h[:2]} rail, row {h[2:]}" if h[:2] in RAIL else h
-            out.append(f'<tr><td><code>{fmt(a)}</code></td><td><code>{fmt(b)}</code></td>'
-                       f'<td><span class="sw" style="background:var({var})"></span>{lab}</td></tr>')
+    for st, title in steps.items():
+        rows = [w for w in WIRES if w[5] == st]
+        out.append(f'<section class="step"><h3><span class="n">{st + 1}</span>{title}: {len(rows)} wires</h3>'
+                   '<table><tr><th>Colour</th><th>From</th><th>To</th><th>What it does</th></tr>')
+        for a, b, var, cname, lab, _ in rows:
+            out.append(f'<tr><td><span class="sw" style="background:var({var})"></span>{cname}</td>'
+                       f'<td><code>{a}</code></td><td><code>{b}</code></td><td>{lab}</td></tr>')
         out.append("</table></section>")
     return "".join(out)
 
@@ -206,6 +188,8 @@ HTML = """<title>Silent Sentinel Breadboard</title>
   --esp: #1f2a33; --esp-fg: #e8eef2; --can: #9aa6b0; --mic: #2f6f4f; --lora: #2a4f8a; --later: #8a96a0;
   --pos: #d23b2f; --neg: #2a6fd6;
   --w-pwr: #d23b2f; --w-gnd: #20262c; --w-bclk: #d99500; --w-ws: #2f9a4c; --w-sd: #2a6fd6; --w-spi: #8a4fc4; --w-ctl: #c2477e;
+  --c-red: #d23b2f; --c-black: #20262c; --c-orange: #ec7a1c; --c-yellow: #e0b100; --c-green: #2f9a4c; --c-blue: #2a6fd6;
+  --c-white: #f4f4f0; --c-purple: #8a4fc4; --c-gray: #8a939b;
   --warn-bg: #fff3d6; --warn-fg: #6b4a00;
   --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -256,8 +240,8 @@ svg .pinsq.on { fill: #e9c46a; stroke: #6b5a1d; stroke-width: .8; }
 svg .pintxt { fill: #9aa6b0; font-size: 8.5px; }
 svg .pintxt.on { fill: #ffffff; font-weight: 500; }
 svg .micpin { fill: #ffffff; }
-svg .wire { fill: none; stroke-width: 3; stroke-linecap: round; opacity: .92; }
-svg .end { stroke: #ffffff; stroke-width: 1; }
+svg .wire { fill: none; stroke-width: 3; paint-order: stroke; stroke-linecap: round; opacity: .92; }
+svg .end { stroke: #3a3226; stroke-width: .8; }
 svg .ant { fill: none; stroke: #5b6670; stroke-width: 2; }
 .steps { display: grid; gap: 22px; min-width: 0; }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
@@ -274,26 +258,24 @@ li { max-width: 70ch; }
 </style>
 <div class="wrap">
 <header>
-  <h1>Silent Sentinel: first node on the breadboard</h1>
+  <h1>Silent Sentinel: demo node on the breadboard</h1>
   <p class="lede">Turn the breadboard so row 1 is at the top and column a is on the left. Every jumper below goes from one hole to another, named by column letter and row number (for example <code>a43</code>). Holes in the same row on the same side of the centre channel (a–e, or f–j) are connected inside the board.</p>
 </header>
 
 <div class="note">
-  <p><strong>Unplug the USB cable while you wire.</strong> Everything runs on 3.3 V from the ESP32; nothing goes to the 5V pin.</p>
-  <p><strong>Mic orientation.</strong> The pin labels are printed on the underside, so you can't read them once a mic is plugged in. Before you push each mic in, find the <strong>SEL</strong> end: SEL goes in <strong>row 4</strong>, 3V ends up in <strong>row 9</strong>.</p>
+  <p><strong>Today's demo build:</strong> ESP32-S3, one ICS-43434 mic, one RFM95W radio. Nothing uses the + / − rails, and the KB2040 is not part of this build.</p>
+  <p><strong>Wire from column h.</strong> Jumper heads are too thick to sit right beside the parts, and every hole f–i in a row is connected, so <code>h</code> works the same as <code>i</code>.</p>
 </div>
 
 <div class="grid">
   <div class="sheet">%SVG%</div>
   <div class="steps">
     <section>
-      <h3><span class="n">0</span>Place the parts</h3>
+      <h3><span class="n">1</span>Place the parts</h3>
       <ol>
-        <li><strong>ESP32-S3:</strong> USB ports toward row 63. Its left header (J1, labelled 3V3, 3V3, RST, 4, 5, 6 …) goes in <strong>column b, rows 40–61</strong>, so <code>b40</code> is 3V3 and <code>b61</code> is GND. Column a stays free: that's where every wire to the ESP32 plugs in.</li>
-        <li><strong>Mic M0:</strong> its 6 pins in <strong>column c, rows 4–9</strong> (SEL in <code>c4</code>, 3V in <code>c9</code>), board hanging out to the left over a and b.</li>
-        <li><strong>Mic M1:</strong> its 6 pins in <strong>column h, rows 4–9</strong> (SEL in <code>h4</code>, 3V in <code>h9</code>), board hanging out to the right over i and j. Covering the rails for a few rows is fine: each rail is one long strip.</li>
-        <li><strong>RFM95W (optional today):</strong> its 9-pin edge in <strong>column j, rows 21–29</strong> (VIN at row 21), module hanging out to the right. Only that edge needs a header.</li>
-        <li>If the red/blue rail lines have a break halfway down the board, bridge each rail across the break with a short jumper.</li>
+        <li><strong>ESP32-S3:</strong> USB ports toward row 63, left header in <strong>column b, rows 40–61</strong>: <code>b40</code> = 3V3 … <code>b61</code> = GND. Every ESP32 wire plugs into the free hole beside it in column a.</li>
+        <li><strong>Mic:</strong> 6 pins in <strong>column j, rows 1–6</strong>, SEL at <code>j1</code>, 3V at <code>j6</code>. Board hangs off the right edge over the rails.</li>
+        <li><strong>RFM95W:</strong> 9-pin edge in <strong>column j, rows 21–29</strong>, VIN at <code>j21</code>, RST at <code>j29</code>. Module hangs off the right edge. 78 mm antenna wire on ANT. EN (row 23) stays unconnected.</li>
       </ol>
     </section>
     %TABLE%
@@ -301,7 +283,7 @@ li { max-width: 70ch; }
       <h3><span class="n">4</span>Check it</h3>
       <ol>
         <li>Plug the USB cable into the same port as before. The LED turns blue (listening).</li>
-        <li>Tell Claude; it turns on the live readout. Whistle or play the demo drone sound near the mics: the level jumps, and the drone sound turns the LED red within about a second.</li>
+        <li>Tell Claude; it turns on the live readout. Whistle or play the demo drone sound near the mic: the level jumps, and the drone sound turns the LED red within about a second.</li>
       </ol>
     </section>
   </div>
