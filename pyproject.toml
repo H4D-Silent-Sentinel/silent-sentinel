@@ -1,0 +1,22 @@
+[project]
+name = "silent-sentinel"
+version = "0.1.0"
+description = "Silent Sentinel: passive acoustic sensor network for tracking small drones through urban occlusion (H4D CENTCOM-4)"
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "pyserial"]
+
+[project.optional-dependencies]
+dev = ["pytest", "matplotlib"]
+
+[project.scripts]
+cuas = "cuas.__main__:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["cuas*"]
+
+[tool.setuptools.package-data]
+cuas = ["static/*"]
