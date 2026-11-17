@@ -52,20 +52,20 @@ WIRES = [
     (esp("3V3"), "L+40", "--w-pwr", "ESP32 3V3 → + rail", 1),
     (esp("GND"), "L-61", "--w-gnd", "ESP32 GND → − rail", 1),
     # mic power + select (rows: 4 SEL, 5 LRCL, 6 DOUT, 7 BCLK, 8 GND, 9 3V)
-    ("b9", "L+12", "--w-pwr", "Mic 3V row → + rail", 2),
-    ("b8", "L-11", "--w-gnd", "Mic GND row → − rail", 2),
-    ("b4", "L-2", "--w-gnd", "M0 SEL → − rail (left channel)", 2),
+    ("d9", "L+12", "--w-pwr", "Mic 3V row → + rail", 2),
+    ("d8", "L-11", "--w-gnd", "Mic GND row → − rail", 2),
+    ("d4", "L-2", "--w-gnd", "M0 SEL → − rail (left channel)", 2),
     # mic signals to the ESP32
-    ("b7", esp("IO4"), "--w-bclk", "BCLK → IO4", 2),
-    ("b5", esp("IO5"), "--w-ws", "LRCL → IO5", 2),
-    ("b6", esp("IO6"), "--w-sd", "DOUT → IO6", 2),
+    ("d7", esp("IO4"), "--w-bclk", "BCLK → IO4", 2),
+    ("d5", esp("IO5"), "--w-ws", "LRCL → IO5", 2),
+    ("d6", esp("IO6"), "--w-sd", "DOUT → IO6", 2),
     # bridge rows 5-9 across the centre channel so M1 shares them (row 4, SEL, stays separate)
     ("e5", "f5", "--w-ws", "bridge LRCL", 2),
     ("e6", "f6", "--w-sd", "bridge DOUT", 2),
     ("e7", "f7", "--w-bclk", "bridge BCLK", 2),
     ("e8", "f8", "--w-gnd", "bridge GND", 2),
     ("e9", "f9", "--w-pwr", "bridge 3V", 2),
-    ("i4", "i9", "--w-pwr", "M1 SEL → 3V row (right channel)", 2),
+    ("g4", "g9", "--w-pwr", "M1 SEL → 3V row (right channel)", 2),
     # LoRa
     (f"f{L_TOP}", esp("3V3_1"), "--w-pwr", "RFM95W VIN → ESP32 3V3", 3),
     (f"f{L_TOP + 1}", "L-30", "--w-gnd", "RFM95W GND → − rail", 3),
@@ -136,8 +136,8 @@ def svg():
             o.append(f'<rect class="pinsq on" x="{x-3.5}" y="{y-3.5}" width="7" height="7"/>')
             tx = x - 9 if side == "L" else x + 9
             o.append(f'<text class="pintxt on micpin" x="{tx}" y="{y+3}" text-anchor="{"end" if side=="L" else "start"}">{p}</text>')
-    mic("M0", "a", "L")
-    mic("M1", "j", "R")
+    mic("M0", "c", "L")
+    mic("M1", "h", "R")
 
     # LoRa: 9-pin header in column j, module hangs out to the right
     x = col_x("j")
@@ -158,18 +158,18 @@ def svg():
 
     # wires
     lora_targets = [b for a, b, *_ in WIRES if a[0] in "fg" and b.startswith("a")]
-    mic_targets = [b for a, b, *_ in WIRES if a[0] == "b" and b.startswith("a")]
+    mic_targets = [b for a, b, *_ in WIRES if a[0] == "d" and b.startswith("a")]
     for a, b, var, _, step in WIRES:
         (x1, y1), (x2, y2) = hole(a), hole(b)
         if abs(y1 - y2) < 1:
             d = f"M{x1} {y1} L{x2} {y2}"
-        elif a[0] == "b" and b.startswith("a"):  # mic signal down to the ESP32
-            lane = col_x("c") + mic_targets.index(b) * 5
+        elif a[0] == "d" and b.startswith("a"):  # mic signal down to the ESP32
+            lane = col_x("d") + 3 + mic_targets.index(b) * 4
             d = f"M{x1} {y1} H{lane} V{y2} H{x2}"
         elif a[0] in "fg" and b.startswith("a"):  # radio line round the left of the rails
             lane = RAIL["L-"] - 10 - lora_targets.index(b) * 4.5
             d = f"M{x1} {y1} H{lane} V{y2} H{x2}"
-        elif a[0] == "i":  # M1 SEL loop
+        elif a[0] == "g" and b[0] == "g":  # M1 SEL loop
             d = f"M{x1} {y1} C{x1+22} {y1} {x2+22} {y2} {x2} {y2}"
         else:  # short hop to a rail
             d = f"M{x1} {y1} C{(x1+x2)/2} {y1} {(x1+x2)/2} {y2} {x2} {y2}"
@@ -290,8 +290,8 @@ li { max-width: 70ch; }
       <h3><span class="n">0</span>Place the parts</h3>
       <ol>
         <li><strong>ESP32-S3:</strong> USB ports toward row 63. Its left header (J1, labelled 3V3, 3V3, RST, 4, 5, 6 …) goes in <strong>column b, rows 40–61</strong>, so <code>b40</code> is 3V3 and <code>b61</code> is GND. Column a stays free: that's where every wire to the ESP32 plugs in.</li>
-        <li><strong>Mic M0:</strong> its 6 pins in <strong>column a, rows 4–9</strong> (SEL in row 4), board hanging out to the left over the rails.</li>
-        <li><strong>Mic M1:</strong> its 6 pins in <strong>column j, rows 4–9</strong> (SEL in row 4), hanging out to the right.</li>
+        <li><strong>Mic M0:</strong> its 6 pins in <strong>column c, rows 4–9</strong> (SEL in <code>c4</code>, 3V in <code>c9</code>), board hanging out to the left over a and b.</li>
+        <li><strong>Mic M1:</strong> its 6 pins in <strong>column h, rows 4–9</strong> (SEL in <code>h4</code>, 3V in <code>h9</code>), board hanging out to the right over i and j. Covering the rails for a few rows is fine: each rail is one long strip.</li>
         <li><strong>RFM95W (optional today):</strong> its 9-pin edge in <strong>column j, rows 21–29</strong> (VIN at row 21), module hanging out to the right. Only that edge needs a header.</li>
         <li>If the red/blue rail lines have a break halfway down the board, bridge each rail across the break with a short jumper.</li>
       </ol>
