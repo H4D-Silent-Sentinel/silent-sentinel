@@ -32,7 +32,7 @@ def hole(spec: str):
 # ESP32-S3-DevKitC-1 header J1, top -> bottom (USB ports at the bottom)
 J1 = ["3V3", "3V3", "RST", "IO4", "IO5", "IO6", "IO7", "IO15", "IO16", "IO17", "IO18", "IO8", "IO3",
       "IO46", "IO9", "IO10", "IO11", "IO12", "IO13", "IO14", "5V", "GND"]
-ESP_TOP = 40  # J1 pin 1 (3V3) sits in b40 ... GND in b61
+ESP_TOP = 42  # J1 pin 1 (3V3) sits in b42 ... GND in b63 (as placed)
 ESP_ROW = {name if name not in ("3V3",) else f"3V3_{i}": ESP_TOP + i for i, name in enumerate(J1)}
 ESP_ROW["3V3"] = ESP_TOP
 
@@ -70,7 +70,7 @@ WIRES = [
 def svg():
     o = []
     W = 470
-    H = int(row_y(63) + 60)
+    H = int(row_y(63) + 90)
     bx0, bx1 = RAIL["L-"] - 18, RAIL["R-"] + 18
     o.append(f'<rect class="bb" x="{bx0}" y="{TOP-30}" width="{bx1-bx0}" height="{row_y(63)-TOP+50}" rx="8"/>')
     o.append(f'<rect class="channel" x="{col_x("e")+P*0.55}" y="{TOP-16}" width="{P*0.9}" height="{row_y(63)-TOP+32}" rx="3"/>')
@@ -273,7 +273,7 @@ li { max-width: 70ch; }
     <section>
       <h3><span class="n">1</span>Place the parts</h3>
       <ol>
-        <li><strong>ESP32-S3:</strong> USB ports toward row 63, left header in <strong>column b, rows 40–61</strong>: <code>b40</code> = 3V3 … <code>b61</code> = GND. Every ESP32 wire plugs into the free hole beside it in column a.</li>
+        <li><strong>ESP32-S3:</strong> USB ports toward row 63, left header in <strong>column b, rows 42–63</strong>: <code>b42</code> = 3V3 … <code>b63</code> = GND (the board itself spans b–j, rows 42–64). Every ESP32 wire plugs into the free hole beside it in column a.</li>
         <li><strong>Mic:</strong> 6 pins in <strong>column j, rows 1–6</strong>, SEL at <code>j1</code>, 3V at <code>j6</code>. Board hangs off the right edge over the rails.</li>
         <li><strong>RFM95W:</strong> 9-pin edge in <strong>column j, rows 21–29</strong>, VIN at <code>j21</code>, RST at <code>j29</code>. Module hangs off the right edge. 78 mm antenna wire on ANT. EN (row 23) stays unconnected.</li>
       </ol>
