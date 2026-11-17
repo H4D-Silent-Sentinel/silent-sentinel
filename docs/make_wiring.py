@@ -71,17 +71,17 @@ def svg():
             out.append(tag(bx - 40, y, net))
     # --- mics (left column)
     for m, (name, bus, side) in enumerate(MICS):
-        mx, my = 40, 40 + m * 146
-        out.append(f'<rect class="part-box" x="{mx}" y="{my}" width="120" height="{len(MIC_PINS)*18+28}" rx="6"/>')
+        mx, my = 20, 40 + m * 146
+        out.append(f'<rect class="part-box" x="{mx}" y="{my}" width="150" height="{len(MIC_PINS)*18+28}" rx="6"/>')
         out.append(f'<text class="part" x="{mx+10}" y="{my+18}">{name}</text>')
-        out.append(f'<text class="sub" x="{mx+110}" y="{my+18}" text-anchor="end">bus {bus} · {"left" if side=="L" else "right"}</text>')
+        out.append(f'<text class="sub" x="{mx+140}" y="{my+18}" text-anchor="end">bus {bus} · {"left" if side=="L" else "right"}</text>')
         for j, p in enumerate(MIC_PINS):
             y = my + 36 + j * 18
             net = mic_net(p, bus, side)
-            out.append(f'<text class="pinlbl on" x="{mx+110}" y="{y+4}" text-anchor="end">{p}</text>')
-            out.append(f'<circle class="pin used" cx="{mx+120}" cy="{y}" r="3.5"/>')
-            out.append(f'<line class="wire" x1="{mx+124}" y1="{y}" x2="{mx+150}" y2="{y}" style="stroke:var({NETS[net][1]})"/>')
-            out.append(tag(mx + 152, y, net, anchor="start"))
+            out.append(f'<text class="pinlbl on" x="{mx+140}" y="{y+4}" text-anchor="end">{p}</text>')
+            out.append(f'<circle class="pin used" cx="{mx+150}" cy="{y}" r="3.5"/>')
+            out.append(f'<line class="wire" x1="{mx+154}" y1="{y}" x2="{mx+176}" y2="{y}" style="stroke:var({NETS[net][1]})"/>')
+            out.append(tag(mx + 178, y, net, anchor="start"))
     # --- LoRa (right)
     lx, ly = 860, 200
     out.append(f'<rect class="part-box" x="{lx}" y="{ly}" width="170" height="{len(LORA_PINS)*22+40}" rx="6"/>')
@@ -98,7 +98,7 @@ def svg():
     ay = ly + len(LORA_PINS) * 22 + 40
     out.append(f'<text class="pinlbl on" x="{lx+120}" y="{ly+24+4}">ANT</text>')
     out.append(f'<path class="ant" d="M{lx+170} {ly+24} h20 v-110"/>')
-    out.append(f'<text class="sub" x="{lx+196}" y="{ly-40}" transform="rotate(-90 {lx+196} {ly-40})" text-anchor="middle">78 mm wire</text>')
+    out.append(f'<text class="sub" x="{lx+190}" y="{ly-94}" text-anchor="end">78 mm wire antenna</text>')
     out.append(f'<text class="tiny" x="{lx+85}" y="{ay+18}" text-anchor="middle">VIN to 3V3, never 5V:</text>')
     out.append(f'<text class="tiny" x="{lx+85}" y="{ay+32}" text-anchor="middle">VIN sets the SPI logic level</text>')
     return (f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Node schematic: four ICS-43434 microphones '
@@ -204,7 +204,7 @@ p { margin: 0 0 10px; max-width: 72ch; }
 <div class="wrap">
 <header>
   <div><h1>Silent Sentinel node wiring</h1></div>
-  <div class="meta"><span>REV A · 2026-11-17</span><span>firmware/node/config.h</span></div>
+  <div class="meta"><span>REV A1 · 2026-11-17</span><span>firmware/node/config.h</span></div>
   <p class="lede">One listening node: ESP32-S3-DevKitC-1 N16R8, four ICS-43434 I2S microphones on two buses, and an RFM95W LoRa radio. Wires are drawn as net labels: every tag with the same name is one wire run. The base receiver is the same build with the microphones left off.</p>
 </header>
 
@@ -243,7 +243,7 @@ p { margin: 0 0 10px; max-width: 72ch; }
   <ol>
     <li>Solder headers on the 4 mic breakouts and the RFM95W. Solder a 78 mm straight wire to the RFM95W <code>ANT</code> pad.</li>
     <li>Seat the DevKit across the breadboard's center channel with its USB ports at the bottom, so header J1 matches the drawing. Run 3V3 and GND to the breadboard rails.</li>
-    <li>Plug the DevKit into the laptop by its <strong>COM</strong> port and flash <code>firmware/node</code>. With nothing else wired, the serial console prints <code>FAULT</code> or <code>WARN</code> lines. That confirms the board and toolchain work.</li>
+    <li>Plug the DevKit into the laptop (either USB-C port) and flash <code>firmware/node</code>. A new board runs a factory LED demo: for the first flash, hold <strong>BOOT</strong>, tap <strong>RST</strong>, release BOOT. With nothing else wired, the console prints a <code>WARN</code> line about the radio. That confirms the board and toolchain work.</li>
     <li>Wire the RFM95W. Reboot, type <code>info</code>: it should say <code>lora=ok</code>.</li>
     <li>Wire bus 0 (M0, M1). Type <code>debug 1</code> and whistle or play a tone: the level column should jump.</li>
     <li>Wire bus 1 (M2, M3) the same way on IO7 / IO15 / IO16.</li>

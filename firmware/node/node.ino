@@ -11,6 +11,7 @@
 // LED: blue = listening, green flash = packet sent, red = drone confirmed,
 //      magenta = hardware fault (check serial output).
 #include <Arduino.h>
+#include <stdarg.h>
 #include <SPI.h>
 #include <LoRa.h>
 #include <Preferences.h>
@@ -31,6 +32,18 @@ static bool debug_on = false, lora_ok = false;
 static uint32_t next_report = 0, next_heartbeat = 0;
 static bool was_confirmed = false;
 static FrameResult last{};
+
+// Log to both USB ports: "USB" (native, Serial) and "COM" (UART bridge, Serial0),
+// so the console works whichever port the laptop is plugged into.
+static void logf(const char *fmt, ...) {
+  char buf[256];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  Serial.print(buf);
+  Serial0.print(buf);
+}
 
 static void led(uint8_t r, uint8_t g, uint8_t b) {
 #ifdef RGB_BUILTIN
@@ -78,7 +91,6 @@ static void deinterleave(const int32_t *src, float *left, float *right) {
 }
 
 static void send(PktType type, const FrameResult &r) {
-  if (!lora_ok) return;
   Packet p{};
   p.ver_type = (PKT_VERSION << 4) | type;
   p.node_id = node_id;
@@ -95,26 +107,32 @@ static void send(PktType type, const FrameResult &r) {
   }
   p.floor_ddb = (int16_t)lroundf(r.floor_db * 10);
   packet_seal(p);
-  LoRa.beginPacket();
-  LoRa.write((const uint8_t *)&p, sizeof(p));
-  LoRa.endPacket();  // blocking, ~15 ms at SF7/500 kHz
-  Serial.printf("TX type=%d seq=%u f0=%.1f lvl=%.1f conf=%d\n", type, p.seq, r.f0, r.level_db, r.confidence);
+  if (lora_ok) {
+    LoRa.beginPacket();
+    LoRa.write((const uint8_t *)&p, sizeof(p));
+    LoRa.endPacket();  // blocking, ~15 ms at SF7/500 kHz
+  }
+  // Same line format as firmware/base_rx, so `cuas run --serial <this node>` works with no radio link.
+  char hex[2 * sizeof(Packet) + 1];
+  for (size_t i = 0; i < sizeof(Packet); i++) sprintf(hex + 2 * i, "%02x", ((const uint8_t *)&p)[i]);
+  logf("PKT 0 0 %s\n", hex);
+  logf("TX type=%d seq=%u f0=%.1f lvl=%.1f conf=%d\n", type, p.seq, r.f0, r.level_db, r.confidence);
 }
 
 static void console() {
   static String line;
-  while (Serial.available()) {
-    char c = Serial.read();
+  while (Serial.available() || Serial0.available()) {
+    char c = Serial.available() ? Serial.read() : Serial0.read();
     if (c != '\n' && c != '\r') { line += c; continue; }
     line.trim();
     if (line.startsWith("id ")) {
       int v = line.substring(3).toInt();
       if (v >= 1 && v <= 254) { node_id = v; prefs.putUChar("id", node_id); }
-      Serial.printf("node id = %d\n", node_id);
+      logf("node id = %d\n", node_id);
     } else if (line.startsWith("debug ")) {
       debug_on = line.substring(6).toInt() != 0;
     } else if (line == "info") {
-      Serial.printf("Silent Sentinel node id=%d lora=%s fs=%d nfft=%d sf=%d bw=%.0fk\n", node_id,
+      logf("Silent Sentinel node id=%d lora=%s fs=%d nfft=%d sf=%d bw=%.0fk\n", node_id,
                     lora_ok ? "ok" : "FAIL", FS, N_FFT, LORA_SF, LORA_BW_HZ / 1e3);
     } else if (line == "tx") {
       send(PKT_HEARTBEAT, last);
@@ -125,7 +143,7 @@ static void console() {
 
 static void fault(const char *msg) {
   while (true) {
-    Serial.printf("FAULT: %s\n", msg);
+    logf("FAULT: %s\n", msg);
     led(40, 0, 40);
     delay(2000);
   }
@@ -133,11 +151,13 @@ static void fault(const char *msg) {
 
 void setup() {
   Serial.begin(115200);
+  Serial0.begin(115200);
+  Serial.setTxTimeoutMs(0);  // never stall the audio loop when no laptop is on the USB port
   delay(500);
   led(0, 0, 20);
   prefs.begin("sentinel", false);
   node_id = prefs.getUChar("id", DEFAULT_NODE_ID);
-  Serial.printf("\nSilent Sentinel node %d booting\n", node_id);
+  logf("\nSilent Sentinel node %d booting\n", node_id);
 
   raw0 = (int32_t *)heap_caps_malloc(HOP * 2 * sizeof(int32_t), MALLOC_CAP_INTERNAL);
   raw1 = (int32_t *)heap_caps_malloc(HOP * 2 * sizeof(int32_t), MALLOC_CAP_INTERNAL);
@@ -159,16 +179,16 @@ void setup() {
     LoRa.setTxPower(LORA_TX_DBM);
     LoRa.enableCrc();
   } else {
-    Serial.println("WARN: RFM95W not found; running detector only (check SPI wiring)");
+    logf("WARN: RFM95W not found; running detector only (check SPI wiring)\n");
   }
   randomSeed(esp_random());
   next_heartbeat = millis() + 2000;
-  Serial.println("listening");
+  logf("listening\n");
 }
 
 void loop() {
   if (!read_hop(rx0, raw0) || !read_hop(rx1, raw1)) {
-    Serial.println("WARN: I2S read timeout");
+    logf("WARN: I2S read timeout\n");
     return;
   }
   deinterleave(raw0, mic[0], mic[1]);
@@ -177,7 +197,7 @@ void loop() {
   last = r;
 
   if (debug_on)
-    Serial.printf("DBG %lu hit=%d f0=%.1f score=%.1f nh=%d lvl=%.1f floor=%.1f conf=%d steady=%d rate=%.1f clip=%d\n",
+    logf("DBG %lu hit=%d f0=%.1f score=%.1f nh=%d lvl=%.1f floor=%.1f conf=%d steady=%d rate=%.1f clip=%d\n",
                   (unsigned long)r.frame, r.hit, r.f0, r.score, r.n_harm, r.level_db, r.floor_db,
                   r.confidence, r.steady, r.f0_rate, r.clipping);
 

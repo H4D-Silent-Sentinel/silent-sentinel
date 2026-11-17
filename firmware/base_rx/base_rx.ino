@@ -8,6 +8,8 @@
 #include <LoRa.h>
 #include "../node/config.h"
 
+static void out(const char *s) { Serial.print(s); Serial0.print(s); }
+
 static void led(uint8_t r, uint8_t g, uint8_t b) {
 #ifdef RGB_BUILTIN
   rgbLedWrite(RGB_BUILTIN, r, g, b);
@@ -16,12 +18,14 @@ static void led(uint8_t r, uint8_t g, uint8_t b) {
 
 void setup() {
   Serial.begin(115200);
+  Serial0.begin(115200);
+  Serial.setTxTimeoutMs(0);  // never stall the audio loop when no laptop is on the USB port
   delay(500);
   SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI, PIN_LORA_CS);
   LoRa.setSPI(SPI);
   LoRa.setPins(PIN_LORA_CS, PIN_LORA_RST, PIN_LORA_DIO0);
   while (!LoRa.begin(LORA_FREQ_HZ)) {
-    Serial.println("FAULT: RFM95W not found (check SPI wiring)");
+    out("FAULT: RFM95W not found (check SPI wiring)\n");
     led(40, 0, 40);
     delay(2000);
   }
@@ -30,7 +34,7 @@ void setup() {
   LoRa.setCodingRate4(LORA_CR4);
   LoRa.setSyncWord(LORA_SYNC);
   LoRa.enableCrc();
-  Serial.println("HELLO silent-sentinel-base v1");
+  out("HELLO silent-sentinel-base v1\n");
   led(0, 20, 0);
 }
 
@@ -40,9 +44,11 @@ void loop() {
   static uint8_t buf[256];
   int len = 0;
   while (LoRa.available() && len < (int)sizeof(buf)) buf[len++] = LoRa.read();
-  Serial.printf("PKT %d %.1f ", LoRa.packetRssi(), LoRa.packetSnr());
-  for (int i = 0; i < len; i++) Serial.printf("%02x", buf[i]);
-  Serial.println();
+  char line[16 + 2 * sizeof(buf)];
+  int k = snprintf(line, sizeof(line), "PKT %d %.1f ", LoRa.packetRssi(), LoRa.packetSnr());
+  for (int i = 0; i < len; i++) k += snprintf(line + k, sizeof(line) - k, "%02x", buf[i]);
+  snprintf(line + k, sizeof(line) - k, "\n");
+  out(line);
   led(0, 0, 40);
   delay(20);
   led(0, 20, 0);
