@@ -5,5 +5,8 @@
   "source_level_db": 75,
   "nodes": [
     {"id": 1, "label": "Bench node", "lat": 40.80940, "lon": -73.96000, "height_m": 1}
+  ],
+  "cameras": [
+    {"id": "post-1", "label": "Bench camera", "lat": 40.80940, "lon": -73.96000, "height_m": 1}
   ]
 }
