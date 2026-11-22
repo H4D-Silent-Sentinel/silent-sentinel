@@ -6,7 +6,9 @@
 #define PKT_MAGIC   0xC5
 #define PKT_VERSION 1
 
-enum PktType : uint8_t { PKT_DETECTION = 1, PKT_HEARTBEAT = 2, PKT_LOST = 3 };
+enum PktType : uint8_t { PKT_DETECTION = 1, PKT_HEARTBEAT = 2, PKT_LOST = 3,
+                         PKT_HINT = 4 };  // HINT: downlink base -> node, see cuas/packet.py make_hint()
+#define HINT_ALL_NODES 0xFF
 
 #define FLAG_CONFIRMED 0x01
 #define FLAG_STEADY    0x02
@@ -44,4 +46,9 @@ static inline uint16_t crc16_ccitt(const uint8_t *d, size_t n) {
 static inline void packet_seal(Packet &p) {
   p.magic = PKT_MAGIC;
   p.crc = crc16_ccitt((const uint8_t *)&p, sizeof(Packet) - 2);
+}
+
+static inline bool packet_valid(const Packet &p) {
+  return p.magic == PKT_MAGIC && (p.ver_type >> 4) == PKT_VERSION &&
+         p.crc == crc16_ccitt((const uint8_t *)&p, sizeof(Packet) - 2);
 }

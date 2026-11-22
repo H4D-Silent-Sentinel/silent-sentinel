@@ -207,7 +207,12 @@ void CombDetector::update_confirm() {
     int j = hist_idx(i);
     if (hist_hit_[j]) f0s[n++] = hist_f0_[j];
   }
-  if (!confirmed_) {
+  bool hinted = hint_f0_ > 0 && frame_ <= hint_until_;
+  if (!confirmed_ && hinted) {
+    int near = 0;
+    for (int i = 0; i < n; i++) near += fabsf(f0s[i] - hint_f0_) <= F0_TOL * hint_f0_;
+    confirmed_ = near >= HINT_CONFIRM_HITS;
+  } else if (!confirmed_) {
     if (n >= CONFIRM_HITS) {
       float s[CONFIRM_WIN];
       memcpy(s, f0s, sizeof(float) * n);

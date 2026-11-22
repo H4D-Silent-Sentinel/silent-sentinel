@@ -51,8 +51,33 @@ def test_climbing_drone_reports_slope():
     assert np.median([r.f0_rate for r in conf]) > 5
 
 
+def _hinted(x, f0, frames=10**6):
+    det = CombDetector()
+    det.set_hint(f0, frames)
+    return det.run(x)
+
+
+def test_hint_reacquires_weak_drone():
+    """A C2 hint at the right f0 holds a faint drone the plain detector only partly confirms."""
+    x = scene(6, drone_spl=44, noise_spl=50, rng=np.random.default_rng(7))
+    plain = confirmed_frames(x)
+    assert sum(r.confirmed for r in _hinted(x, 200.0)) > plain + 15
+    assert sum(r.confirmed for r in _hinted(x, 300.0)) <= plain  # wrong f0: no help
+
+
+def test_hint_does_not_create_alarms():
+    assert sum(r.confirmed for r in _hinted(scene(8, rng=np.random.default_rng(0)), 200.0)) == 0
+    assert sum(r.confirmed for r in _hinted(scene(8, wind_spl=80, rng=np.random.default_rng(1)), 200.0)) == 0
+
+
+def test_hint_expires():
+    x = scene(6, drone_spl=44, noise_spl=50, rng=np.random.default_rng(7))
+    assert sum(r.confirmed for r in _hinted(x, 200.0, frames=1)) == confirmed_frames(x)
+
+
 @pytest.mark.skipif(not shutil.which("clang++") and not shutil.which("g++"), reason="no C++ compiler")
-def test_firmware_matches_reference():
+@pytest.mark.parametrize("hint", [None, (200.0, 10**6)])
+def test_firmware_matches_reference(hint):
     """Compile firmware/node/detector.cpp for the host and compare frame by frame."""
     cxx = shutil.which("clang++") or shutil.which("g++")
     with tempfile.TemporaryDirectory() as d:
@@ -60,12 +85,14 @@ def test_firmware_matches_reference():
         subprocess.run([cxx, "-std=c++17", "-O2", f"-I{ROOT/'tests/host'}", "-o", exe,
                         str(ROOT / "tests/host/run_detector.cpp"), str(ROOT / "firmware/node/detector.cpp")],
                        check=True)
-        x = scene(6, drone_spl=50, noise_spl=50, rng=np.random.default_rng(5)).astype(np.float32)
+        spl = 50 if hint is None else 44  # hinted case: faint drone, where the hint matters
+        x = scene(6, drone_spl=spl, noise_spl=50, rng=np.random.default_rng(5 if hint is None else 7)).astype(np.float32)
         raw = os.path.join(d, "x.f32")
         x.tofile(raw)
-        out = subprocess.run([exe, raw, str(x.shape[1])], capture_output=True, text=True, check=True).stdout
+        extra = [] if hint is None else [str(hint[0]), str(hint[1])]
+        out = subprocess.run([exe, raw, str(x.shape[1]), *extra], capture_output=True, text=True, check=True).stdout
     fw = np.array([[float(v) for v in line.split(",")] for line in out.strip().splitlines()])
-    ref = CombDetector().run(x.astype(np.float64))
+    ref = (CombDetector().run(x.astype(np.float64)) if hint is None else _hinted(x.astype(np.float64), *hint))
     assert len(fw) == len(ref)
     py = np.array([[r.frame, r.hit, r.f0, r.score, r.n_harm, r.level_db, r.floor_db, r.confirmed]
                    for r in ref])
