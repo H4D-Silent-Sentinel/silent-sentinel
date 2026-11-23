@@ -35,10 +35,10 @@ arduino-cli upload  --fqbn $FQBN -p /dev/cu.usbmodemXXXX firmware/radar_bridge
 
 ```sh
 # laptop mic as the acoustic node + the radar, map at http://127.0.0.1:8080
-.venv/bin/python -m cuas listen --site sites/demo_bench_radar.json --radar /dev/cu.usbmodemXXXX --map
+.venv/bin/python -m cuas listen --site sites/demo_bench.json --radar /dev/cu.usbmodemXXXX --map
 ```
 
-1. Set `yaw_deg` for `r1` in `sites/demo_bench_radar.json` to the direction the radar faces. If a target moving right shows up moving left, set `"flip_x": true`.
+1. Set `yaw_deg` for `r1` in `sites/demo_bench.json` to the direction the radar faces. If a target moving right shows up moving left, set `"flip_x": true`.
 2. Move the drone (or a phone playing drone audio) in front of the radar: track appears with source **radar:r1**.
 3. Move it out of the radar's view (behind a metal sheet or a wall, or out to the side) while the mic still hears it: `radar:r1` gets crossed out on the map, **acoustic** stays live, same track number.
 
