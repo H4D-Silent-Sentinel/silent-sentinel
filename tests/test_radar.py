@@ -39,7 +39,7 @@ def test_parser_handles_garbage_and_split_frames():
 
 
 def test_radar_hit_lands_where_the_radar_points():
-    site = Site.load(SITES / "demo_bench.json")
+    site = Site.load(SITES / "demo_bench_radar.json")
     rd = site.radars["r1"]
     rd.yaw_deg = 90  # facing east
     base = Base(site)
