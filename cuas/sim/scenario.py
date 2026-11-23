@@ -1,6 +1,6 @@
 """Network simulator: a drone flies through the site; nodes hear it (or not)
 and send real encoded LoRa packets; a camera post sends Jetson-format visual
-messages. Everything goes through the same Base code as the live system.
+messages; radars send RD-03D frames. Everything goes through the same Base code as the live system.
 
 The acoustic model is deliberately simple (spherical spreading + absorption +
 random multipath error, a fixed detection threshold); use it to exercise the
@@ -16,6 +16,7 @@ import numpy as np
 from ..config import Site
 from ..geo import bearing_deg
 from ..packet import FLAG_CONFIRMED, Packet, PktType
+from ..radar import RadarTarget
 from ..visual import make_visual, parse_visual
 
 
@@ -65,18 +66,21 @@ class NetworkSim:
     report_s: float = 2.0
     cam_range_m: float = 150.0
     cam_sigma_deg: float = 0.7
+    radar_period_s: float = 0.5
     seed: int = 0
 
     def events(self, dt: float = 0.1):
         """Yield (t, kind, payload, truth) in time order.
-        kind 'lora' -> Packet (already encoded+decoded), 'visual' -> bytes."""
+        kind 'lora' -> Packet (already encoded+decoded), 'visual' -> bytes,
+        'radar' -> (radar id, [RadarTarget]); not frame bytes, because the
+        RD-03D format tops out at 32.7 m and the sim radar can be bigger."""
         rng = np.random.default_rng(self.seed)
         T = max(d.duration for d in self.drones) + 20
         next_rep = {i: rng.uniform(0, self.report_s) for i in self.site.nodes}
         next_hb = {i: rng.uniform(0, 5) for i in self.site.nodes}
         detecting = {i: False for i in self.site.nodes}
         seq = {i: 0 for i in self.site.nodes}
-        next_cam = 0.0
+        next_cam = next_radar = 0.0
         t = 0.0
         while t < T:
             truth = [d.pos(t) for d in self.drones]
@@ -127,6 +131,24 @@ class NetworkSim:
                                        "label": "quadcopter"})
                     if tracks:
                         yield t + 0.05, "visual", make_visual(cid, t, {}, tracks), truth
+            if t >= next_radar:
+                next_radar = t + self.radar_period_s
+                for rid, rd in self.site.radars.items():
+                    tgs = []
+                    for d, p in zip(self.drones, truth):
+                        if p is None:
+                            continue
+                        de, dn = p[0] - rd.e, p[1] - rd.n
+                        rng_h = math.hypot(de, dn)
+                        off = (bearing_deg(de, dn) - rd.yaw_deg + 180) % 360 - 180
+                        if rng_h > rd.max_range_m or abs(off) > rd.fov_deg / 2:
+                            continue
+                        r = rng_h + rng.normal(0, rd.range_sigma_m)
+                        a = math.radians(off + rng.normal(0, rd.az_sigma_deg))
+                        if rd.flip_x:
+                            a = -a
+                        tgs.append(RadarTarget(r * math.sin(a), r * math.cos(a), d.speed))
+                    yield t + 0.01, "radar", (rid, tgs), truth
             t = round(t + dt, 6)
 
 
@@ -150,6 +172,8 @@ def run(site: Site, base, sim: NetworkSim, on_tick=None, realtime: float = 0.0):
         clock["t"] = t
         if kind == "lora":
             base.on_packet(payload, t)
+        elif kind == "radar":
+            base.on_radar(payload[0], payload[1], t)
         else:
             base.on_visual(parse_visual(payload, site.frame, site.cameras))
     return log

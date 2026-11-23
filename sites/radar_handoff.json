@@ -1,0 +1,79 @@
+{
+  "name": "Radar handoff (radar west of Broadway & W 116th St)",
+  "origin": [
+    40.808,
+    -73.964
+  ],
+  "drone_alt_m": 40,
+  "nodes": [
+    {
+      "id": 1,
+      "label": "NE corner",
+      "lat": 40.80822,
+      "lon": -73.96375,
+      "height_m": 3
+    },
+    {
+      "id": 2,
+      "label": "NW corner",
+      "lat": 40.80835,
+      "lon": -73.9642,
+      "height_m": 3
+    },
+    {
+      "id": 3,
+      "label": "SW corner",
+      "lat": 40.8078,
+      "lon": -73.9643,
+      "height_m": 3
+    },
+    {
+      "id": 4,
+      "label": "SE corner",
+      "lat": 40.80766,
+      "lon": -73.96384,
+      "height_m": 3
+    },
+    {
+      "id": 5,
+      "label": "Roof east",
+      "lat": 40.8085,
+      "lon": -73.9628,
+      "height_m": 30
+    },
+    {
+      "id": 6,
+      "label": "Roof west",
+      "lat": 40.80745,
+      "lon": -73.9653,
+      "height_m": 30
+    }
+  ],
+  "cameras": [
+    {
+      "id": "post-1",
+      "label": "Camera post, NE corner",
+      "lat": 40.80822,
+      "lon": -73.96375,
+      "height_m": 4
+    },
+    {
+      "id": "chaser-1",
+      "label": "Chaser drone (Jetson Orin Nano)"
+    }
+  ],
+  "radars": [
+    {
+      "id": "r1",
+      "label": "Radar west (simulated 200 m air-search radar)",
+      "lat": 40.80818,
+      "lon": -73.967564,
+      "height_m": 5,
+      "yaw_deg": 90,
+      "fov_deg": 100,
+      "max_range_m": 200,
+      "range_sigma_m": 3,
+      "az_sigma_deg": 1.5
+    }
+  ]
+}

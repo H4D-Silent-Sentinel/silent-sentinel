@@ -3,6 +3,8 @@
   python -m cuas run    --site sites/x.json --serial /dev/cu.usbserial-XXXX [--map] [--cot URL]
   python -m cuas sim    --site sites/x.json [--map] [--speed 4] [--no-camera]
   python -m cuas listen --site sites/x.json [--map]   # laptop microphone acts as node 1 (demo / backup)
+  python -m cuas radar  --port /dev/cu.usbmodemXXXX   # print RD-03D targets (wiring check)
+    run / listen also take --radar PORT (one per radar in the site file, in order)
   python -m cuas detect recording.wav           # run the node detector on a recording
   python -m cuas ports                          # list serial ports
 """
@@ -25,6 +27,15 @@ def _outputs(args, base):
         serve(base, port=args.map_port)
 
 
+def _radars(args, base):
+    from .radar import radar_reader
+    ids = list(base.site.radars)
+    for k, port in enumerate(args.radar or []):
+        if k >= len(ids):
+            sys.exit(f"--radar {port}: site file has only {len(ids)} radar(s)")
+        radar_reader(port, ids[k], base)
+
+
 def cmd_run(args):
     from .base import Base
     from .config import Site
@@ -34,6 +45,7 @@ def cmd_run(args):
     _outputs(args, base)
     if args.serial:
         serial_reader(args.serial, base)
+    _radars(args, base)
     vis = visual_listener(base, args.visual_port)
     base.on_track.append(CueSender(base, vis.peers, args.jetson or []))
     print(f"Silent Sentinel base running: {len(site.nodes)} nodes. Ctrl-C to stop.")
@@ -101,6 +113,7 @@ def cmd_listen(args):
     node_id = args.node or next(iter(site.nodes))
     base = Base(site)
     _outputs(args, base)
+    _radars(args, base)
     det, rep = CombDetector(), Reporter(node_id)
     q: queue.Queue = queue.Queue()
     stream = sd.InputStream(samplerate=FS, channels=1, blocksize=HOP, dtype="float32",
@@ -155,6 +168,32 @@ def cmd_detect(args):
         was = r.confirmed
 
 
+def cmd_radar(args):
+    import serial
+
+    from .radar import BAUD, MULTI_TARGET_CMD, FrameParser
+    s = serial.Serial()
+    s.port, s.baudrate, s.timeout = args.port, BAUD, 0.2
+    s.dtr = s.rts = False
+    s.open()
+    s.write(MULTI_TARGET_CMD)
+    p, n, t0 = FrameParser(), 0, time.time()
+    print("move in front of the radar (it only sees motion). Ctrl-C to stop.")
+    try:
+        while True:
+            for tgs in p.feed(s.read(512)):
+                n += 1
+                if n % 3:
+                    continue
+                txt = "  ".join(f"[{tg.range_m:4.1f} m {tg.angle_deg:+4.0f}° {tg.speed_mps:+5.2f} m/s]" for tg in tgs)
+                print(f"{n / (time.time() - t0):4.1f} frames/s  {txt or 'no movers'}", flush=True)
+            if n == 0 and time.time() - t0 > 3:
+                print("no RD-03D frames yet: check 5 V power and that radar TX goes to the bridge RX pin")
+                t0 = time.time()
+    except KeyboardInterrupt:
+        pass
+
+
 def cmd_ports(_):
     from serial.tools import list_ports
     for p in list_ports.comports():
@@ -170,7 +209,10 @@ def main(argv=None):
         p.add_argument("--map-port", type=int, default=8080)
         p.add_argument("--cot", nargs="?", const="udp://239.2.3.1:6969", help="send CoT to TAK (default SA multicast)")
 
-    p = sub.add_parser("run"); p.add_argument("--site", required=True); p.add_argument("--serial")
+    def radar(p):
+        p.add_argument("--radar", action="append", metavar="PORT", help="RD-03D serial port (repeat per radar)")
+
+    p = sub.add_parser("run"); p.add_argument("--site", required=True); p.add_argument("--serial"); radar(p)
     p.add_argument("--visual-port", type=int, default=47010)
     p.add_argument("--jetson", action="append", help="IP to send cues to (also auto-learned)")
     outputs(p); p.set_defaults(fn=cmd_run)
@@ -186,8 +228,10 @@ def main(argv=None):
 
     p = sub.add_parser("listen"); p.add_argument("--site", required=True)
     p.add_argument("--node", type=int, help="node id to appear as (default: first in site)")
-    p.add_argument("--gain", type=float, default=1.0)
+    p.add_argument("--gain", type=float, default=1.0); radar(p)
     outputs(p); p.set_defaults(fn=cmd_listen)
+
+    p = sub.add_parser("radar"); p.add_argument("--port", required=True); p.set_defaults(fn=cmd_radar)
 
     p = sub.add_parser("detect"); p.add_argument("wav"); p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(fn=cmd_detect)

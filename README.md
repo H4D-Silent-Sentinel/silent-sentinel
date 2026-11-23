@@ -14,6 +14,7 @@ Six listening nodes (ESP32-S3 + 4× ICS-43434 mics + RFM95W LoRa) detect the rot
 | `cuas/packet.py` | 24-byte LoRa packet format (matches `firmware/node/packet.h`). |
 | `cuas/sim/` | Synthetic drone / noise / wind / generator audio. |
 | `cuas/base.py`, `localize.py`, `tracker.py` | Base station: loudness position fixes, multi-sensor Kalman tracker. |
+| `cuas/radar.py`, `firmware/radar_bridge/`, `docs/radar.md` | Bench radar (RD-03D) for the radar-to-acoustic handoff demo. |
 | `cuas/visual.py`, `docs/jetson-interface.md` | Interface to the Jetson Visual-Tracker (UDP JSON both ways). |
 | `cuas/cot.py`, `cuas/mapserver.py` | Outputs: Cursor-on-Target to TAK, live local map. |
 | `cuas/sim/scenario.py` | Network simulator driving the real base code. |
@@ -47,6 +48,8 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/python -m cuas sim --site sites/example_intersection.json --map      # simulated drone, map at http://127.0.0.1:8080
 .venv/bin/python -m cuas ports                                                 # find the base receiver
 .venv/bin/python -m cuas run --site sites/example_intersection.json --serial /dev/cu.usbserial-XXXX --map --cot
+.venv/bin/python -m cuas sim --site sites/radar_handoff.json --map                # radar loses the drone, acoustic keeps the track
+.venv/bin/python -m cuas listen --site sites/demo_bench.json --radar /dev/cu.usbmodemXXXX --map  # bench demo: laptop mic + radar
 .venv/bin/python -m cuas detect recording.wav -v                               # run the node detector on a recording
 .venv/bin/python -m pytest                                                     # tests (also checks firmware detector == Python)
 ```
