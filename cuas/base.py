@@ -1,8 +1,8 @@
 """The base station: everything that runs on the base laptop.
 
   LoRa packets (acoustic nodes) ─┐
-  UDP JSON (Jetson visual) ──────┼─> Base ─> Tracker ─> map / CoT (TAK) / cues to Jetson
-  RD-03D frames (radar) ─────────┘
+                                 ├─> Base ─> Tracker ─> map / CoT (TAK) / cues to Jetson
+  UDP JSON (Jetson visual) ──────┘
 
 Thread-safe: inputs may arrive from serial / UDP threads; call step() ~1 Hz.
 """
@@ -18,31 +18,10 @@ import numpy as np
 from .config import Site
 from .localize import AcousticReport, Fix, cluster_by_f0, locate
 from .packet import Packet, PktType
-from .radar import RadarTarget
 from .tracker import Tracker
 from .visual import VisualObs
 
 NODE_STALE_S = 75.0  # two missed heartbeats → node shown as offline
-RADAR_STALE_S = 3.0
-
-
-def polar_cov(az_deg: float, range_m: float, range_sigma_m: float, az_sigma_deg: float) -> np.ndarray:
-    """2x2 east/north covariance of a range + bearing measurement."""
-    a = math.radians(az_deg)
-    u_r = np.array([math.sin(a), math.cos(a)])
-    u_t = np.array([math.cos(a), -math.sin(a)])
-    ts = range_m * math.radians(az_sigma_deg)
-    return range_sigma_m ** 2 * np.outer(u_r, u_r) + ts ** 2 * np.outer(u_t, u_t)
-
-
-@dataclass
-class RadarHit:
-    radar: str
-    t: float
-    e: float
-    n: float
-    range_m: float
-    speed_mps: float
 
 
 @dataclass
@@ -71,8 +50,6 @@ class Base:
         self.nodes = {i: NodeStatus(i) for i in self.site.nodes}
         self.fixes: list[Fix] = []
         self.visual: list[VisualObs] = []
-        self.radar_hits: list[RadarHit] = []
-        self.radar_seen: dict[str, float] = {}
         self._new_acoustic = False
 
     # -- inputs ----------------------------------------------------------------
@@ -103,7 +80,12 @@ class Base:
                 if o.range_m:
                     e = o.sensor_e + o.range_m * math.sin(math.radians(o.az_deg))
                     n = o.sensor_n + o.range_m * math.cos(math.radians(o.az_deg))
-                    R = polar_cov(o.az_deg, o.range_m, o.range_sigma_m or 0.2 * o.range_m, o.az_sigma_deg)
+                    rs = o.range_sigma_m or 0.2 * o.range_m
+                    ts = o.range_m * math.radians(o.az_sigma_deg)
+                    a = math.radians(o.az_deg)
+                    u_r = np.array([math.sin(a), math.cos(a)])
+                    u_t = np.array([math.cos(a), -math.sin(a)])
+                    R = rs ** 2 * np.outer(u_r, u_r) + ts ** 2 * np.outer(u_t, u_t)
                     alt = None
                     if o.el_deg is not None:
                         alt = o.sensor_alt + o.range_m * math.tan(math.radians(o.el_deg))
@@ -112,26 +94,6 @@ class Base:
                 else:
                     self.tracker.update_bearing((o.sensor_e, o.sensor_n), o.az_deg, o.az_sigma_deg,
                                                 o.t, source=f"visual:{o.src}", label=o.label)
-
-    def on_radar(self, radar_id: str, targets: list[RadarTarget], t: float | None = None) -> None:
-        """One radar frame (0-3 moving targets in the radar's own x/y)."""
-        t = t if t is not None else self.clock()
-        rd = self.site.radars.get(radar_id)
-        if rd is None:
-            return
-        with self.lock:
-            self.radar_seen[radar_id] = t
-            for tg in targets:
-                rng = tg.range_m
-                if tg.y_m <= 0 or rng < 0.1 or rng > rd.max_range_m * 1.2:
-                    continue
-                az = (rd.yaw_deg + (-tg.angle_deg if rd.flip_x else tg.angle_deg)) % 360
-                e = rd.e + rng * math.sin(math.radians(az))
-                n = rd.n + rng * math.cos(math.radians(az))
-                self.radar_hits.append(RadarHit(radar_id, t, e, n, rng, tg.speed_mps))
-                del self.radar_hits[:-100]
-                R = polar_cov(az, rng, rd.range_sigma_m, rd.az_sigma_deg)
-                self.tracker.update_position((e, n), R, t, source=f"radar:{radar_id}")
 
     # -- periodic --------------------------------------------------------------
     def step(self, now: float | None = None) -> list[dict]:
@@ -193,17 +155,5 @@ class Base:
                 if now - o.t < 5:
                     lat, lon = f.to_ll(o.sensor_e, o.sensor_n)
                     vis.append(dict(src=o.src, lat=lat, lon=lon, az=o.az_deg, label=o.label, cls=o.cls))
-            radars = []
-            for rid, rd in self.site.radars.items():
-                lat, lon = f.to_ll(rd.e, rd.n)
-                hits = []
-                seen = self.radar_seen.get(rid, 0.0)
-                for h in self.radar_hits:  # targets from the latest frame only
-                    if h.radar == rid and h.t == seen and now - h.t < 2:
-                        hlat, hlon = f.to_ll(h.e, h.n)
-                        hits.append(dict(lat=hlat, lon=hlon, range_m=h.range_m, speed=h.speed_mps))
-                radars.append(dict(id=rid, label=rd.label, lat=lat, lon=lon, yaw=rd.yaw_deg, fov=rd.fov_deg,
-                                   range_m=rd.max_range_m, online=seen > 0 and now - seen < RADAR_STALE_S,
-                                   hits=hits))
             return dict(t=now, site=self.site.name, origin=self.site.origin, nodes=nodes,
-                        tracks=tracks, fixes=fixes, visual=vis, radars=radars)
+                        tracks=tracks, fixes=fixes, visual=vis)

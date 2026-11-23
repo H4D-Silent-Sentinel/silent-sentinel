@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root { --bg:#0e1419; --panel:#151d24; --fg:#e2e9ee; --muted:#8e9daa; --line:#26333d;
-          --node:#6ea8ff; --det:#ff6b5e; --off:#5b6773; --trk:#ffb02e; --vis:#5cc77a; --rad:#c08cff; }
+          --node:#6ea8ff; --det:#ff6b5e; --off:#5b6773; --trk:#ffb02e; --vis:#5cc77a; }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg);
     font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -35,16 +35,15 @@
     <h1>Silent Sentinel</h1>
     <div class="sub" id="site">connecting…</div>
     <h2>Tracks</h2><div id="tracks"></div>
-    <h2>Radar</h2><div id="radars"></div>
     <h2>Acoustic nodes</h2><div id="nodes"></div>
     <h2>Cameras</h2><div id="cams"></div>
   </aside>
 </div>
 <script>
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const map = L.map('map', { zoomControl: true, maxZoom: 23 });
+const map = L.map('map', { zoomControl: true });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  { maxZoom: 23, maxNativeZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+  { maxZoom: 20, maxNativeZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 const layer = L.layerGroup().addTo(map);
 let centred = false;
 
@@ -55,18 +54,8 @@ function dest(lat, lon, azDeg, m) {
 }
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-function wedge(r) {
-  const pts = [[r.lat, r.lon]];
-  for (let k = 0; k <= 24; k++) pts.push(dest(r.lat, r.lon, r.yaw - r.fov / 2 + r.fov * k / 24, r.range_m));
-  return pts;
-}
-
 function render(s) {
-  if (!centred) {
-    const pts = [s.origin, ...s.nodes.map(n => [n.lat, n.lon]), ...(s.radars || []).flatMap(wedge)];
-    map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 22 });
-    centred = true;
-  }
+  if (!centred) { map.setView(s.origin, 18); centred = true; }
   document.getElementById('site').textContent = s.site + ' · ' + new Date(s.t * 1000).toLocaleTimeString();
   layer.clearLayers();
 
@@ -74,20 +63,6 @@ function render(s) {
       weight: 1, opacity: .25 * (1 - f.age / 15), fill: false }).addTo(layer);
   for (const v of s.visual) L.polyline([[v.lat, v.lon], dest(v.lat, v.lon, v.az, 400)],
       { color: css('--vis'), weight: 2, opacity: .7, dashArray: '6 4' }).addTo(layer);
-
-  const radRows = [];
-  for (const r of s.radars || []) {
-    const col = r.online ? css('--rad') : css('--off');
-    L.polygon(wedge(r), { color: col, weight: 1, opacity: .6, fillOpacity: r.hits.length ? .14 : .05 })
-      .bindTooltip(`Radar ${esc(r.id)} ${esc(r.label)}`).addTo(layer);
-    L.circleMarker([r.lat, r.lon], { radius: 6, color: col, fillColor: col, fillOpacity: .9, weight: 2 }).addTo(layer);
-    for (const h of r.hits) L.circleMarker([h.lat, h.lon], { radius: 4, color: col, fillColor: col, fillOpacity: .8, weight: 1 }).addTo(layer);
-    const right = !r.online ? 'offline' : r.hits.length
-      ? r.hits.map(h => `${h.range_m.toFixed(1)} m`).join(' · ') : 'no movers';
-    radRows.push(`<div class="row"><span class="dot" style="background:${col}"></span>
-      <span>${esc(r.id)} · ${esc(r.label)}</span><span class="num">${right}</span></div>`);
-  }
-  document.getElementById('radars').innerHTML = radRows.join('') || '<div class="empty">No radar in this site.</div>';
 
   const nodeRows = [];
   for (const n of s.nodes) {
@@ -114,8 +89,7 @@ function render(s) {
       .addTo(layer);
     trkRows.push(`<div class="row"><span class="dot" style="background:${col};opacity:${op}"></span>
       <span>Track ${t.id}${t.label ? ' · ' + esc(t.label) : ''}${t.confirmed ? '' : '<span class="pill">tentative</span>'}
-      <br><span class="sub">${t.sources.map(k => (t.live_sources || []).includes(k)
-        ? `<b style="color:var(--fg)">${esc(k)}</b>` : `<s>${esc(k)}</s>`).join(', ')}${t.coast_s > 3 ? ` · coasting ${t.coast_s.toFixed(0)} s` : ''}</span></span>
+      <br><span class="sub">${t.sources.map(esc).join(', ')}${t.coast_s > 3 ? ` · coasting ${t.coast_s.toFixed(0)} s` : ''}</span></span>
       <span class="num">±${t.sigma_m.toFixed(0)} m<br>${sp.toFixed(1)} m/s</span></div>`);
   }
   document.getElementById('tracks').innerHTML = trkRows.join('') || '<div class="empty">No drones tracked.</div>';

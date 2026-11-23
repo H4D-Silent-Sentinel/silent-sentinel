@@ -32,7 +32,6 @@ CONFIRM_HITS = 3
 MAX_COAST_S = 30.0
 MAX_SIGMA_M = 400.0
 F0_ASSOC_TOL = 0.2  # |ln(f0a/f0b)|
-LIVE_S = 4.0  # a sensor counts as currently seeing a track if it updated it this recently
 
 
 @dataclass
@@ -200,6 +199,5 @@ class Tracker:
                             cov=P[:2, :2].tolist(), sigma_m=float(np.sqrt(np.trace(P[:2, :2]) / 2)),
                             alt_m=tr.alt_m, confirmed=tr.confirmed, f0=tr.f0, label=tr.label,
                             coast_s=t - tr.last_update, sources=sorted(tr.sources),
-                            live_sources=sorted(k for k, ts in tr.sources.items() if t - ts <= LIVE_S),
                             history=[(e, n) for _, e, n in tr.history[-60:]]))
         return out
