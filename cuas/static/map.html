@@ -63,8 +63,10 @@ function wedge(r) {
 
 function render(s) {
   if (!centred) {
-    const pts = [s.origin, ...s.nodes.map(n => [n.lat, n.lon]), ...(s.radars || []).flatMap(wedge)];
-    map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 22 });
+    if ((s.radars || []).length) {  // fit the radar coverage (a bench radar is only ~8 m across)
+      const pts = [s.origin, ...s.nodes.map(n => [n.lat, n.lon]), ...s.radars.flatMap(wedge)];
+      map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 22 });
+    } else map.setView(s.origin, 18);
     centred = true;
   }
   document.getElementById('site').textContent = s.site + ' · ' + new Date(s.t * 1000).toLocaleTimeString();

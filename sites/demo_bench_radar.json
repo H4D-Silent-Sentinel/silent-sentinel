@@ -1,0 +1,12 @@
+{
+  "name": "Class demo bench (one node + radar)",
+  "origin": [40.80940, -73.96000],
+  "drone_alt_m": 2,
+  "source_level_db": 75,
+  "nodes": [
+    {"id": 1, "label": "Bench node", "lat": 40.80940, "lon": -73.96000, "height_m": 1}
+  ],
+  "radars": [
+    {"id": "r1", "label": "Bench radar (RD-03D)", "lat": 40.80940, "lon": -73.96000, "height_m": 1, "yaw_deg": 0}
+  ]
+}

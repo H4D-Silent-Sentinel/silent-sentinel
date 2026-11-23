@@ -49,7 +49,7 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/python -m cuas ports                                                 # find the base receiver
 .venv/bin/python -m cuas run --site sites/example_intersection.json --serial /dev/cu.usbserial-XXXX --map --cot
 .venv/bin/python -m cuas sim --site sites/radar_handoff.json --map                # radar loses the drone, acoustic keeps the track
-.venv/bin/python -m cuas listen --site sites/demo_bench.json --radar /dev/cu.usbmodemXXXX --map  # bench demo: laptop mic + radar
+.venv/bin/python -m cuas listen --site sites/demo_bench_radar.json --radar /dev/cu.usbmodemXXXX --map  # bench demo: laptop mic + radar
 .venv/bin/python -m cuas detect recording.wav -v                               # run the node detector on a recording
 .venv/bin/python -m pytest                                                     # tests (also checks firmware detector == Python)
 ```
