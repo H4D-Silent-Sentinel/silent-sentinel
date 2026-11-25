@@ -34,6 +34,32 @@ def test_drone_detected_and_f0():
     assert not conf[-1].steady
 
 
+def test_fpv_drone_detected_and_f0():
+    # 5-inch FPV quad: 3-blade props at 25,000 rpm -> 1250 Hz blade-pass frequency
+    rs = CombDetector().run(scene(6, drone_spl=55, drone_rpm=25000, drone_blades=3,
+                                  rng=np.random.default_rng(6)))
+    conf = [r for r in rs if r.confirmed]
+    assert len(conf) > 40
+    assert abs(np.median([r.f0 for r in conf]) - 1250) < 15
+
+
+def test_noise_no_alarm_more_seeds():
+    # the wider f0 range searches more candidates; noise must still stay quiet
+    for seed in range(10, 20):
+        assert confirmed_frames(scene(8, rng=np.random.default_rng(seed))) == 0
+
+
+def test_firmware_constants_match_reference():
+    import re
+    from cuas import detector as d
+    cfg = (ROOT / "firmware/node/config.h").read_text()
+    val = lambda name: float(re.search(rf"#define\s+{name}\s+([0-9.]+)", cfg).group(1))
+    for name in ("F0_MIN", "F0_MAX", "F0_RATIO", "FMAX_HARM", "FLOOR_LO_HZ", "FLOOR_HI_HZ", "H_MAX", "MIN_HARM"):
+        assert val(name) == getattr(d, name), name
+    assert int(val("K_MAX")) == d.K_MAX
+    assert int(val("N_CAND")) == d.N_CAND == len(d.F0S)
+
+
 def test_generator_flagged_steady():
     rng = np.random.default_rng(3)
     n = 10 * 32000

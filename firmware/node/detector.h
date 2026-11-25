@@ -47,6 +47,7 @@ class CombDetector {
   int16_t (*on_)[H_MAX] = nullptr;
   int16_t (*off_)[H_MAX] = nullptr;
   uint8_t n_h_[N_CAND];
+  float f0s_[N_CAND];
 
   // history ring (hit, f0), oldest → newest via hist_at(i)
   bool hist_hit_[STEADY_WIN];

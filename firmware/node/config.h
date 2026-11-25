@@ -51,9 +51,11 @@
 
 #define HPF_HZ      60.0f
 #define F0_MIN      70.0f
-#define F0_MAX      400.0f
-#define F0_STEP     0.5f
-#define FMAX_HARM   3000.0f
+#define F0_MAX      2000.0f
+#define F0_RATIO    1.003f   // candidate f0 grid: F0_MIN * F0_RATIO^i
+#define FMAX_HARM   8000.0f
+#define FLOOR_LO_HZ 100.0f   // band for the background-level estimate
+#define FLOOR_HI_HZ 3000.0f
 #define H_MAX       12
 #define MIN_HARM    3
 #define HARM_DB     6.0f
@@ -78,6 +80,6 @@
 
 #define SPL_OFFSET  120.0f   // ICS-43434: -26 dBFS @ 94 dB SPL
 
-// ceil(3300 / 7.8125) + 2
-#define K_MAX       425
-#define N_CAND      661      // (400 - 70) / 0.5 + 1
+// ceil(8800 / 7.8125) + 2
+#define K_MAX       1129
+#define N_CAND      1120     // floor(ln(F0_MAX / F0_MIN) / ln(F0_RATIO)) + 1

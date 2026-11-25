@@ -12,7 +12,8 @@ Per frame (4096 samples @ 32 kHz, hop 2048 → 15.6 frames/s, 7.8 Hz bins):
   3. Whiten: subtract a running median across frequency (33 bins ≈ ±125 Hz).
      Broadband noise (traffic, wind) becomes ~0 dB; tones stick out.
   4. Mask bins that have held a tone for minutes (AC units, transformers).
-  5. Comb search: for every candidate spacing f0 in 70–400 Hz, compare the
+  5. Comb search: for every candidate spacing f0 in 70–2000 Hz (consumer quads
+     ~130–300 Hz, FPV quads ~1–1.5 kHz; log-spaced grid, 0.3 % steps), compare the
      spectrum AT the harmonics h·f0 with the spectrum HALFWAY between them,
      (h+½)·f0. A rotor comb gives a big positive contrast; noise gives ~0;
      the wrong octave gives ~0 or negative.
@@ -22,6 +23,7 @@ Per frame (4096 samples @ 32 kHz, hop 2048 → 15.6 frames/s, 7.8 Hz bins):
 """
 from __future__ import annotations
 
+import math
 from collections import deque
 from dataclasses import dataclass
 
@@ -38,8 +40,11 @@ DF = FS / N_FFT  # 7.8125 Hz per bin
 FRAME_RATE = FS / HOP  # 15.625 frames/s
 
 HPF_HZ = 60.0
-F0_MIN, F0_MAX, F0_STEP = 70.0, 400.0, 0.5
-FMAX_HARM = 3000.0
+F0_MIN, F0_MAX = 70.0, 2000.0
+F0_RATIO = 1.003  # candidate f0 grid: F0_MIN * F0_RATIO**i, 0.3 % steps
+N_CAND = int(math.floor(math.log(F0_MAX / F0_MIN) / math.log(F0_RATIO))) + 1
+FMAX_HARM = 8000.0
+FLOOR_LO_HZ, FLOOR_HI_HZ = 100.0, 3000.0  # band for the background-level estimate
 H_MAX = 12
 MIN_HARM = 3
 HARM_DB = 6.0  # a harmonic "counts" if this far above the local median
@@ -79,7 +84,7 @@ def hpf_coeffs(fc: float, fs: float) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _build_comb_tables():
-    f0s = np.arange(F0_MIN, F0_MAX + 1e-9, F0_STEP)
+    f0s = F0_MIN * F0_RATIO ** np.arange(N_CAND)
     h = np.arange(1, H_MAX + 1)
     n_h = np.minimum(H_MAX, np.floor(FMAX_HARM / f0s)).astype(int)
     on = np.rint(np.outer(f0s, h) / DF).astype(int)
@@ -157,7 +162,7 @@ class CombDetector:
 
         harm_bins = ON_BINS[i][H_MASK[i]]
         level_db = 10 * np.log10(np.sum(10 ** (P_db[harm_bins] / 10))) + SPL_OFFSET
-        lo, hi = int(100 / DF), int(FMAX_HARM / DF)
+        lo, hi = int(FLOOR_LO_HZ / DF), int(FLOOR_HI_HZ / DF)
         floor_db = float(np.median(P_db[lo:hi])) + SPL_OFFSET
 
         warm = self.frame >= WARMUP_FRAMES

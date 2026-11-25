@@ -39,7 +39,8 @@ bool CombDetector::begin() {
   win_norm_ = (float)(4.0 / (wsum * wsum));
 
   for (int i = 0; i < N_CAND; i++) {
-    float f0 = F0_MIN + i * F0_STEP;
+    float f0 = F0_MIN * powf(F0_RATIO, (float)i);
+    f0s_[i] = f0;
     n_h_[i] = (uint8_t)std::min(H_MAX, (int)floorf(FMAX_HARM / f0));
     for (int h = 1; h <= H_MAX; h++) {
       int on = (int)lroundf(h * f0 / DF), off = (int)lroundf((h + 0.5f) * f0 / DF);
@@ -142,7 +143,7 @@ FrameResult CombDetector::process(const float *const ch[N_CH]) {
     on_row[h] = Wmax3_[on_[best][h]];
     if (on_row[h] > HARM_DB) n_harm++;
   }
-  float f0_grid = F0_MIN + best * F0_STEP;
+  float f0_grid = f0s_[best];
   r.f0 = refine_f0(f0_grid, on_row);
   r.score = best_score;
   r.n_harm = n_harm;
@@ -151,8 +152,8 @@ FrameResult CombDetector::process(const float *const ch[N_CH]) {
   for (int h = 0; h < n_h_[best]; h++) lin += pow(10.0, P_db_[on_[best][h]] / 10.0);
   r.level_db = 10.0f * (float)log10(lin) + SPL_OFFSET;
 
-  {  // floor: median of bins [100 Hz, 3000 Hz)
-    const int lo = (int)(100.0f / DF), hi = (int)(FMAX_HARM / DF);
+  {  // floor: median of bins [FLOOR_LO_HZ, FLOOR_HI_HZ)
+    const int lo = (int)(FLOOR_LO_HZ / DF), hi = (int)(FLOOR_HI_HZ / DF);
     static float tmp[K_MAX];
     int n = hi - lo;
     memcpy(tmp, P_db_ + lo, sizeof(float) * n);

@@ -40,6 +40,8 @@ def drone(duration: float, rpm=6000.0, blades=2, motors=4, spl_db=60.0,
         bpf = blades * r / 60.0
         phase = 2 * np.pi * np.cumsum(bpf) / FS
         for h in range(1, harmonics + 1):
+            if h * blades * base.max() / 60.0 * 1.05 >= FS / 2:
+                break  # nothing above Nyquist
             amp = h ** -0.8 * 10 ** (rng.normal(0, 2) / 20)
             out += amp * np.sin(h * phase + rng.uniform(0, 2 * np.pi))
     out *= _fs_amp(spl_db) / (np.std(out) + 1e-12)
@@ -71,14 +73,14 @@ def generator(duration: float, f0=120.0, spl_db=55.0, rng=None) -> np.ndarray:
                  rpm_wander=0.0, rng=rng)
 
 
-def scene(duration: float, *, drone_spl=None, drone_rpm=6000.0, noise_spl=50.0,
+def scene(duration: float, *, drone_spl=None, drone_rpm=6000.0, drone_blades=2, noise_spl=50.0,
           wind_spl=None, gen_spl=None, n_ch=N_CH, rng=None) -> np.ndarray:
     """4-mic recording: shared sources + independent per-mic noise/wind."""
     rng = rng or np.random.default_rng()
     n = int(duration * FS)
     common = np.zeros(n)
     if drone_spl is not None:
-        common += drone(duration, rpm=drone_rpm, spl_db=drone_spl, rng=rng)
+        common += drone(duration, rpm=drone_rpm, blades=drone_blades, spl_db=drone_spl, rng=rng)
     if gen_spl is not None:
         common += generator(duration, spl_db=gen_spl, rng=rng)
     x = np.empty((n_ch, n))
