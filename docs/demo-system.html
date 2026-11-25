@@ -107,7 +107,7 @@ circle.ant{fill:var(--lora);stroke:none}
 <section>
   <h2>Terms</h2>
   <dl class="gloss">
-    <div><dt>C2</dt> <dd><b>Command and Control</b>: laptop running sentinel-c2</dd></div>
+    <div><dt>C2</dt> <dd><b>Command and Control</b>: laptop running the C2 software</dd></div>
     <div><dt>LoRa</dt> <dd><b>Long Range</b> radio, 915 MHz</dd></div>
     <div><dt>SF / BW</dt> <dd><b>Spreading Factor / Bandwidth</b> (LoRa settings)</dd></div>
     <div><dt>I2S</dt> <dd><b>Inter-IC Sound</b>: digital audio bus</dd></div>
@@ -232,7 +232,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <!-- laptop -->
       <rect class="box" x="770" y="190" width="400" height="505" rx="6"/>
       <text class="tb" x="790" y="214">C2 laptop (Mac)</text>
-      <text class="s" x="790" y="232">sentinel-c2, uses silent-sentinel cuas as library</text>
+      <text class="s" x="790" y="232">C2 software: fusion, tracking, cueing</text>
       <rect class="box2" x="790" y="250" width="360" height="120" rx="4"/>
       <text class="tb" x="805" y="274">Fusion</text>
       <text class="t" x="805" y="296">acoustic loudness localization</text>
@@ -865,7 +865,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <tr><td>N2–N4</td><td><span class="chip no">not built</span></td><td>copy N1 once N1 reads audio</td></tr>
       <tr><td>Base receiver</td><td><span class="chip wip">firmware compiles</span></td><td>build, flash <code>base_rx</code>, receive N1</td></tr>
       <tr><td>Radar station</td><td><span class="chip wip">firmware compiles</span> parts ~Nov 30 – Dec 1</td><td>wire, run <code>cuas radar</code>, write UDP :47012 sender</td></tr>
-      <tr><td>C2 (sentinel-c2)</td><td><span class="chip ok">runs on simulated sensors</span></td><td>connect real base receiver</td></tr>
+      <tr><td>C2 software</td><td><span class="chip ok">runs on simulated sensors</span></td><td>connect real base receiver</td></tr>
       <tr><td>Camera / Jetson</td><td><span class="chip wip">Visual-Tracker on Mac webcam</span></td><td>camera source for Jetson; port to CUDA</td></tr>
       <tr><td>Pluto SDR</td><td><span class="chip no">owned, no software</span></td><td>decide demo role</td></tr>
       <tr><td>Power</td><td><span class="chip no">no power banks</span></td><td>4 banks (team-owned or buy)</td></tr>
