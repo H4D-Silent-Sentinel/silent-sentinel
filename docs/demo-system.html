@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silent Sentinel Demo System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+/* Layout: one column of drawn figures, each followed by its reference table. Link color = link medium. */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --fg:#17202b; --muted:#5b6675; --line:#d5dbe3;
+  --lora:#2456d6; --net:#14805e; --pwr:#c4361d; --plan:#b86a00; --usb:#17202b;
+  --chip-ok:#e3f3ec; --chip-wip:#fdf1dc; --chip-no:#f9e3df;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --panel:#161d26; --fg:#e4e9f0; --muted:#97a3b3; --line:#2c3643;
+  --lora:#7aa2ff; --net:#4cc79a; --pwr:#ff7a5c; --plan:#f0a640; --usb:#e4e9f0;
+  --chip-ok:#173528; --chip-wip:#3a2c12; --chip-no:#3d1e17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --panel:#161d26; --fg:#e4e9f0; --muted:#97a3b3; --line:#2c3643;
+  --lora:#7aa2ff; --net:#4cc79a; --pwr:#ff7a5c; --plan:#f0a640; --usb:#e4e9f0;
+  --chip-ok:#173528; --chip-wip:#3a2c12; --chip-no:#3d1e17; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:36px}
+h1{font-size:26px;margin:0;font-weight:700;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 4px;font-weight:600;text-wrap:balance}
+h2 b{color:var(--lora);font-weight:600}
+.sub{color:var(--muted);margin:0;font-size:14px}
+section{display:flex;flex-direction:column;gap:12px;min-width:0}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;overflow-x:auto}
+figure svg{display:block;width:100%;min-width:760px;height:auto;color:var(--fg);font-family:var(--mono)}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;font-family:var(--sans)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;font-family:var(--mono)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{display:inline-block;width:34px;height:0;border-top:2px solid}
+.tbl{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code,p code,li code{font-family:var(--mono);font-size:12.5px}
+.def{font-size:13px;color:var(--muted);margin:0}
+.def b{color:var(--fg)}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:4px 20px;font-size:13px;margin:0}
+.gloss div{min-width:0}
+.gloss dt{display:inline;font-family:var(--mono);font-weight:600}
+.gloss dd{display:inline;margin:0;color:var(--muted)}
+.gloss dd b{color:var(--lora);font-weight:600}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:var(--chip-ok);color:var(--net)}.wip{background:var(--chip-wip);color:var(--plan)}.no{background:var(--chip-no);color:var(--pwr)}
+/* SVG classes */
+.box{fill:var(--panel);stroke:var(--fg);stroke-width:1.5}
+.box2{fill:var(--bg);stroke:var(--fg);stroke-width:1.2}
+.boxp{fill:var(--panel);stroke:var(--plan);stroke-width:1.5;stroke-dasharray:6 4}
+.bld{fill:var(--bg);stroke:var(--fg);stroke-width:2}
+.t{fill:var(--fg);font-size:13px}
+.tb{fill:var(--fg);font-size:14px;font-weight:600}
+.s{fill:var(--muted);font-size:11.5px}
+.tl{fill:var(--lora);font-size:12px}.tn{fill:var(--net);font-size:12px}.tp{fill:var(--pwr);font-size:12px}.tpl{fill:var(--plan);font-size:12px}
+.w{stroke:var(--usb);stroke-width:1.8;fill:none}
+.lora{stroke:var(--lora);stroke-width:1.8;stroke-dasharray:7 5;fill:none}
+.net{stroke:var(--net);stroke-width:1.8;fill:none}
+.pwr{stroke:var(--pwr);stroke-width:1.8;fill:none}
+.plan{stroke:var(--plan);stroke-width:1.8;stroke-dasharray:6 4;fill:none}
+.wedge{fill:var(--plan);fill-opacity:.14;stroke:var(--plan);stroke-width:1.2}
+.dot-n{fill:var(--panel);stroke:var(--lora);stroke-width:2.2}
+.mk-fg{fill:var(--usb)}.mk-l{fill:var(--lora)}.mk-n{fill:var(--net)}.mk-p{fill:var(--pwr)}.mk-o{fill:var(--plan)}
+.flag{fill:var(--pwr)}
+.hole circle{fill:var(--muted);opacity:.45}
+.pin{fill:var(--fg)}.pin.off{fill:var(--muted)}
+.part{stroke-width:1.5;fill-opacity:.88}
+.mic{fill:var(--panel);stroke:var(--fg)}
+.rfm{fill:var(--panel);stroke:var(--lora)}
+.esp{fill:var(--panel);stroke:var(--fg)}
+.port{fill:none;stroke:var(--lora);stroke-width:2.5}
+.mh{fill:none;stroke:var(--muted);stroke-width:1}
+.ant{fill:var(--bg);stroke:var(--muted);stroke-width:1;stroke-dasharray:2 2}
+circle.ant{fill:var(--lora);stroke:none}
+.can{fill:var(--bg);stroke:var(--muted);stroke-width:1}
+.usb{fill:var(--muted);stroke:none}
+.keep{fill:var(--plan);fill-opacity:.12;stroke:var(--plan);stroke-dasharray:4 3}
+.chan{fill:var(--line);opacity:.5}
+.antw{stroke:var(--lora);stroke-width:2.5;fill:none}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-fg" d="M0,0L10,5L0,10z"/></marker>
+    <marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-l" d="M0,0L10,5L0,10z"/></marker>
+    <marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0L10,5L0,10z"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-p" d="M0,0L10,5L0,10z"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-o" d="M0,0L10,5L0,10z"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:6px">
+  <h1>Silent Sentinel Demo System</h1>
+  <p class="sub">One building, 4 listening nodes at the corners, 1 radar, 1 camera tracker, 1 RF receiver, fused at the C2 laptop. Pins and ports from <code>firmware/node/config.h</code>, <code>radar/</code>, <code>sentinel-c2</code>.</p>
+</header>
+
+<section>
+  <h2>Terms</h2>
+  <dl class="gloss">
+    <div><dt>C2</dt> <dd><b>Command and Control</b>: laptop running sentinel-c2</dd></div>
+    <div><dt>LoRa</dt> <dd><b>Long Range</b> radio, 915 MHz</dd></div>
+    <div><dt>SF / BW</dt> <dd><b>Spreading Factor / Bandwidth</b> (LoRa settings)</dd></div>
+    <div><dt>I2S</dt> <dd><b>Inter-IC Sound</b>: digital audio bus</dd></div>
+    <div><dt>SPI</dt> <dd><b>Serial Peripheral Interface</b>: radio bus</dd></div>
+    <div><dt>UART</dt> <dd><b>Universal Asynchronous Receiver-Transmitter</b>: serial link</dd></div>
+    <div><dt>USB</dt> <dd><b>Universal Serial Bus</b>: data + 5 V power</dd></div>
+    <div><dt>UDP</dt> <dd><b>User Datagram Protocol</b>: network messages</dd></div>
+    <div><dt>GPIO</dt> <dd><b>General-Purpose Input/Output</b> pin</dd></div>
+    <div><dt>BCLK / WS / SD</dt> <dd><b>Bit Clock / Word Select / Serial Data</b> (I2S lines)</dd></div>
+    <div><dt>SCK / MISO / MOSI / CS</dt> <dd><b>Clock / Main-In-Sub-Out / Main-Out-Sub-In / Chip Select</b> (SPI lines)</dd></div>
+    <div><dt>DIO0 / RST</dt> <dd><b>Digital I/O 0</b> (radio interrupt) / <b>Reset</b></dd></div>
+    <div><dt>SEL</dt> <dd><b>Select</b>: mic channel pin, GND = left, 3V3 = right</dd></div>
+    <div><dt>3V3</dt> <dd><b>3.3 volt</b> supply rail</dd></div>
+    <div><dt>RF</dt> <dd><b>Radio Frequency</b></dd></div>
+    <div><dt>SDR</dt> <dd><b>Software-Defined Radio</b> (ADALM-Pluto)</dd></div>
+    <div><dt>IQ</dt> <dd><b>In-phase / Quadrature</b>: raw radio samples</dd></div>
+    <div><dt>CoT / TAK</dt> <dd><b>Cursor on Target / Team Awareness Kit</b>: military map format and app</dd></div>
+    <div><dt>YOLO</dt> <dd><b>You Only Look Once</b>: object detector</dd></div>
+    <div><dt>VLM</dt> <dd><b>Vision-Language Model</b>: confirms "drone"</dd></div>
+    <div><dt>HINT</dt> <dd>packet from C2 telling a node where to listen for the drone</dd></div>
+    <div><dt>f0</dt> <dd><b>fundamental frequency</b> of the rotor tone (70–400 Hz)</dd></div>
+  </dl>
+</section>
+
+<section>
+  <h2>System: units, links, data direction</h2>
+  <div class="legend">
+    <span><i style="border-color:var(--lora);border-top-style:dashed"></i>LoRa radio</span>
+    <span><i style="border-color:var(--usb)"></i>USB / wired data</span>
+    <span><i style="border-color:var(--net)"></i>Ethernet UDP</span>
+    <span><i style="border-color:var(--pwr)"></i>power</span>
+    <span><i style="border-color:var(--plan);border-top-style:dashed"></i>not built / not integrated</span>
+  </div>
+  <figure>
+    <svg viewBox="0 0 1200 710" role="img" aria-label="Four listening nodes send LoRa detections to the base receiver, which feeds the C2 laptop over USB. Radar station and Pluto SDR connect to the laptop by USB; Jetson connects by Ethernet UDP.">
+      <!-- nodes -->
+      <text class="tb" x="30" y="40">Listening nodes ×4 (building corners)</text>
+      <g>
+        <rect class="box" x="30" y="60" width="260" height="112" rx="4"/>
+        <text class="tb" x="45" y="84">N1 · NW corner</text>
+        <text class="t" x="45" y="106">ESP32-S3 N16R8</text>
+        <text class="t" x="45" y="124">4× ICS-43434 mic (I2S)</text>
+        <text class="t" x="45" y="142">RFM95W 915 MHz (SPI)</text>
+        <text class="tp" x="45" y="162">5 V USB-C ← power bank</text>
+        <line class="w" x1="290" y1="115" x2="306" y2="115"/><path class="w" d="M298,115 V98 M290,90 L298,98 L306,90"/>
+      </g>
+      <g>
+        <rect class="box" x="30" y="200" width="260" height="112" rx="4"/>
+        <text class="tb" x="45" y="224">N2 · NE corner</text>
+        <text class="t" x="45" y="246">ESP32-S3 N16R8</text>
+        <text class="t" x="45" y="264">4× ICS-43434 mic (I2S)</text>
+        <text class="t" x="45" y="282">RFM95W 915 MHz (SPI)</text>
+        <text class="tp" x="45" y="302">5 V USB-C ← power bank</text>
+        <path class="w" d="M290,255 H298 V238 M290,230 L298,238 L306,230"/>
+      </g>
+      <g>
+        <rect class="box" x="30" y="340" width="260" height="112" rx="4"/>
+        <text class="tb" x="45" y="364">N3 · SE corner</text>
+        <text class="t" x="45" y="386">ESP32-S3 N16R8</text>
+        <text class="t" x="45" y="404">4× ICS-43434 mic (I2S)</text>
+        <text class="t" x="45" y="422">RFM95W 915 MHz (SPI)</text>
+        <text class="tp" x="45" y="442">5 V USB-C ← power bank</text>
+        <path class="w" d="M290,395 H298 V378 M290,370 L298,378 L306,370"/>
+      </g>
+      <g>
+        <rect class="box" x="30" y="480" width="260" height="112" rx="4"/>
+        <text class="tb" x="45" y="504">N4 · SW corner</text>
+        <text class="t" x="45" y="526">ESP32-S3 N16R8</text>
+        <text class="t" x="45" y="544">4× ICS-43434 mic (I2S)</text>
+        <text class="t" x="45" y="562">RFM95W 915 MHz (SPI)</text>
+        <text class="tp" x="45" y="582">5 V USB-C ← power bank</text>
+        <path class="w" d="M290,535 H298 V518 M290,510 L298,518 L306,510"/>
+      </g>
+      <!-- LoRa links -->
+      <line class="lora" x1="310" y1="95"  x2="448" y2="282" marker-start="url(#al)" marker-end="url(#al)"/>
+      <line class="lora" x1="310" y1="235" x2="448" y2="292" marker-start="url(#al)" marker-end="url(#al)"/>
+      <line class="lora" x1="310" y1="375" x2="448" y2="302" marker-start="url(#al)" marker-end="url(#al)"/>
+      <line class="lora" x1="310" y1="515" x2="448" y2="312" marker-start="url(#al)" marker-end="url(#al)"/>
+      <text class="tl" x="455" y="206">LoRa 915 MHz</text>
+      <text class="tl" x="455" y="222">SF7 · 500 kHz · 17 dBm</text>
+      <text class="tl" x="455" y="372">→ detection / LOST / heartbeat</text>
+      <text class="tl" x="455" y="388">← HINT</text>
+
+      <!-- base receiver -->
+      <rect class="box" x="450" y="240" width="200" height="110" rx="4"/>
+      <text class="tb" x="465" y="264">Base receiver</text>
+      <text class="t" x="465" y="286">RFM95W ⇄ ESP32-S3</text>
+      <text class="s" x="465" y="304">firmware: base_rx</text>
+      <text class="tp" x="465" y="338">5 V from laptop USB</text>
+
+      <!-- base to laptop -->
+      <line class="w" x1="650" y1="295" x2="788" y2="295" marker-start="url(#af)" marker-end="url(#af)"/>
+      <text class="t" x="664" y="284">USB serial</text>
+      <text class="s" x="664" y="314">PKT → · ← TX</text>
+
+      <!-- radar station -->
+      <rect class="box" x="450" y="430" width="200" height="120" rx="4"/>
+      <text class="tb" x="465" y="454">Radar station</text>
+      <text class="t" x="465" y="476">RD-03D 24 GHz</text>
+      <text class="s" x="465" y="494">UART 256000 → ESP32-S3</text>
+      <text class="s" x="465" y="510">bridge (radar_bridge)</text>
+      <text class="tp" x="465" y="538">5 V from laptop USB</text>
+      <line class="w" x1="650" y1="490" x2="788" y2="490" marker-end="url(#af)"/>
+      <text class="t" x="664" y="480">USB serial</text>
+
+      <!-- Pluto -->
+      <rect class="box" x="450" y="580" width="200" height="100" rx="4"/>
+      <text class="tb" x="465" y="604">Pluto SDR (RF)</text>
+      <text class="s" x="465" y="624">drone control/video link</text>
+      <text class="s" x="465" y="640">receive only</text>
+      <text class="tp" x="465" y="668">5 V from laptop USB</text>
+      <line class="plan" x1="650" y1="625" x2="788" y2="625" marker-end="url(#ao)"/>
+      <text class="tpl" x="664" y="615">USB · IQ</text>
+
+      <!-- Jetson -->
+      <rect class="box" x="770" y="30" width="400" height="118" rx="4"/>
+      <text class="tb" x="790" y="54">Jetson Orin Nano (at C2)</text>
+      <text class="t" x="790" y="76">Visual-Tracker: YOLO11 + ByteTrack + VLM</text>
+      <text class="tpl" x="790" y="96">camera input: none on order</text>
+      <text class="tp" x="790" y="134">19 V DC adapter ← wall outlet</text>
+
+      <!-- laptop -->
+      <rect class="box" x="770" y="190" width="400" height="505" rx="6"/>
+      <text class="tb" x="790" y="214">C2 laptop (Mac)</text>
+      <text class="s" x="790" y="232">sentinel-c2, uses silent-sentinel cuas as library</text>
+      <rect class="box2" x="790" y="250" width="360" height="120" rx="4"/>
+      <text class="tb" x="805" y="274">Fusion</text>
+      <text class="t" x="805" y="296">acoustic loudness localization</text>
+      <text class="t" x="805" y="316">Kalman tracker: acoustic + radar + camera</text>
+      <text class="t" x="805" y="336">HINT downlink to nodes</text>
+      <text class="t" x="805" y="356">cue to camera tracker</text>
+
+      <!-- jetson link -->
+      <line class="net" x1="930" y1="148" x2="930" y2="248" marker-end="url(#an)"/>
+      <line class="net" x1="1060" y1="248" x2="1060" y2="148" marker-end="url(#an)"/>
+      <text class="tn" x="940" y="176">visual</text>
+      <text class="tn" x="940" y="192">UDP :47010</text>
+      <text class="tn" x="1070" y="176">cue, status</text>
+      <text class="tn" x="1070" y="192">UDP :47011</text>
+      <text class="tn" x="830" y="176">Ethernet</text>
+
+      <!-- radar sender -->
+      <rect class="boxp" x="790" y="460" width="200" height="60" rx="4"/>
+      <text class="tpl" x="805" y="484">radar sender (to write)</text>
+      <text class="s" x="805" y="504">rd03d.py → radar msg</text>
+      <line class="plan" x1="890" y1="460" x2="890" y2="372" marker-end="url(#ao)"/>
+      <text class="tpl" x="898" y="420">UDP :47012</text>
+      <text class="tpl" x="898" y="436">localhost</text>
+
+      <!-- sdr software -->
+      <rect class="boxp" x="790" y="595" width="200" height="60" rx="4"/>
+      <text class="tpl" x="805" y="619">SDR software</text>
+      <text class="s" x="805" y="639">not written</text>
+
+      <!-- outputs -->
+      <line class="w" x1="1080" y1="370" x2="1080" y2="580"/>
+      <rect class="box2" x="1010" y="400" width="140" height="40" rx="4"/>
+      <text class="t" x="1022" y="425">Dashboard :8090</text>
+      <rect class="box2" x="1010" y="460" width="140" height="40" rx="4"/>
+      <text class="t" x="1022" y="485">Map :8080</text>
+      <rect class="box2" x="1010" y="520" width="140" height="40" rx="4"/>
+      <text class="t" x="1022" y="545">CoT → TAK (opt.)</text>
+      <text class="s" x="1010" y="590">outputs (browser / TAK)</text>
+      <text class="tp" x="1010" y="680">laptop charger ← wall</text>
+    </svg>
+    <figcaption>Nodes only talk to the base receiver; the base receiver, radar station and Pluto are USB devices on the laptop. Jetson is a separate computer on the same network.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Site layout (top view)</h2>
+  <figure>
+    <svg viewBox="0 0 1000 520" role="img" aria-label="Building with a node on each corner, C2 table east of the building, radar beam facing east.">
+      <!-- compass -->
+      <line class="w" x1="60" y1="90" x2="60" y2="40" marker-end="url(#af)"/>
+      <text class="tb" x="54" y="110">N</text>
+      <!-- building -->
+      <rect class="bld" x="200" y="110" width="360" height="300"/>
+      <text class="tb" x="380" y="250" text-anchor="middle">Building</text>
+      <text class="s" x="380" y="270" text-anchor="middle">defended asset</text>
+      <line class="w" x1="380" y1="330" x2="380" y2="290"/>
+      <rect class="flag" x="380" y="290" width="26" height="16"/>
+      <!-- LoRa -->
+      <line class="lora" x1="200" y1="110" x2="680" y2="250"/>
+      <line class="lora" x1="560" y1="110" x2="680" y2="250"/>
+      <line class="lora" x1="560" y1="410" x2="680" y2="270"/>
+      <line class="lora" x1="200" y1="410" x2="680" y2="270"/>
+      <!-- nodes -->
+      <circle class="dot-n" cx="200" cy="110" r="15"/><text class="tb" x="200" y="115" text-anchor="middle">N1</text>
+      <circle class="dot-n" cx="560" cy="110" r="15"/><text class="tb" x="560" y="115" text-anchor="middle">N2</text>
+      <circle class="dot-n" cx="560" cy="410" r="15"/><text class="tb" x="560" y="415" text-anchor="middle">N3</text>
+      <circle class="dot-n" cx="200" cy="410" r="15"/><text class="tb" x="200" y="415" text-anchor="middle">N4</text>
+      <text class="s" x="200" y="80" text-anchor="middle">NW</text>
+      <text class="s" x="560" y="80" text-anchor="middle">NE</text>
+      <text class="s" x="560" y="448" text-anchor="middle">SE</text>
+      <text class="s" x="200" y="448" text-anchor="middle">SW</text>
+      <!-- radar wedge -->
+      <path class="wedge" d="M860,260 L915,165 A110,110 0 0 1 915,355 Z"/>
+      <text class="tpl" x="878" y="140">RD-03D beam</text>
+      <text class="tpl" x="878" y="384">±60° az · ~8 m</text>
+      <!-- C2 table -->
+      <rect class="box" x="680" y="200" width="180" height="120" rx="4"/>
+      <text class="tb" x="694" y="224">C2 table</text>
+      <text class="s" x="694" y="244">laptop</text>
+      <text class="s" x="694" y="260">base receiver</text>
+      <text class="s" x="694" y="276">radar station</text>
+      <text class="s" x="694" y="292">Pluto SDR</text>
+      <text class="s" x="694" y="308">Jetson</text>
+      <text class="tl" x="590" y="190">LoRa</text>
+    </svg>
+    <figcaption>Not to scale. C2 side of the building is a placeholder; radar and Pluto are tethered by USB, so they sit at the C2 table. Radar sees only moving targets inside its beam.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Listening node: inside one breadboard (×4, identical)</h2>
+  <figure>
+    <svg viewBox="0 0 1100 620" role="img" aria-label="ESP32-S3 with four microphones on two I2S buses, RFM95W radio on SPI, powered by a USB power bank; 3.3 V rail feeds mics and radio.">
+      <!-- mics -->
+      <rect class="box" x="60" y="100" width="170" height="60" rx="4"/><text class="tb" x="75" y="124">Mic 0</text><text class="s" x="75" y="144">SEL → GND (left)</text>
+      <rect class="box" x="60" y="180" width="170" height="60" rx="4"/><text class="tb" x="75" y="204">Mic 1</text><text class="s" x="75" y="224">SEL → 3V3 (right)</text>
+      <rect class="box" x="60" y="290" width="170" height="60" rx="4"/><text class="tb" x="75" y="314">Mic 2</text><text class="s" x="75" y="334">SEL → GND (left)</text>
+      <rect class="box" x="60" y="370" width="170" height="60" rx="4"/><text class="tb" x="75" y="394">Mic 3</text><text class="s" x="75" y="414">SEL → 3V3 (right)</text>
+      <text class="s" x="60" y="80">ICS-43434 (Adafruit #6049)</text>
+      <!-- bus 0 -->
+      <path class="w" d="M230,130 H300 V210 H230"/>
+      <line class="w" x1="300" y1="170" x2="418" y2="170" marker-end="url(#af)"/>
+      <text class="t" x="310" y="160">I2S bus 0</text>
+      <text class="s" x="310" y="188">SD audio →</text>
+      <text class="s" x="310" y="202">← BCLK, WS</text>
+      <!-- bus 1 -->
+      <path class="w" d="M230,320 H300 V400 H230"/>
+      <line class="w" x1="300" y1="360" x2="418" y2="360" marker-end="url(#af)"/>
+      <text class="t" x="310" y="350">I2S bus 1</text>
+      <text class="s" x="310" y="378">SD audio →</text>
+      <text class="s" x="310" y="392">← BCLK, WS</text>
+      <!-- esp -->
+      <rect class="box" x="420" y="100" width="260" height="400" rx="6"/>
+      <text class="tb" x="550" y="252" text-anchor="middle">ESP32-S3-DevKitC-1</text>
+      <text class="s" x="550" y="270" text-anchor="middle">N16R8 · firmware: node</text>
+      <text class="s" x="550" y="286" text-anchor="middle">rotor-tone detector, 32 kHz</text>
+      <text class="t" x="432" y="152">GPIO4 BCLK</text>
+      <text class="t" x="432" y="172">GPIO5 WS</text>
+      <text class="t" x="432" y="192">GPIO6 SD</text>
+      <text class="t" x="432" y="342">GPIO7 BCLK</text>
+      <text class="t" x="432" y="362">GPIO15 WS</text>
+      <text class="t" x="432" y="382">GPIO16 SD</text>
+      <text class="t" x="668" y="232" text-anchor="end">SCK GPIO12</text>
+      <text class="t" x="668" y="252" text-anchor="end">MISO GPIO13</text>
+      <text class="t" x="668" y="272" text-anchor="end">MOSI GPIO11</text>
+      <text class="t" x="668" y="292" text-anchor="end">CS GPIO10</text>
+      <text class="t" x="668" y="312" text-anchor="end">RST GPIO9</text>
+      <text class="t" x="668" y="332" text-anchor="end">DIO0 GPIO8</text>
+      <text class="tp" x="432" y="470">3V3 out</text>
+      <text class="tp" x="668" y="470" text-anchor="end">3V3 out</text>
+      <text class="tp" x="550" y="492" text-anchor="middle">USB-C 5 V in</text>
+      <!-- spi -->
+      <line class="w" x1="682" y1="282" x2="818" y2="282" marker-start="url(#af)" marker-end="url(#af)"/>
+      <text class="t" x="700" y="272">SPI</text>
+      <text class="s" x="700" y="302">6 wires</text>
+      <!-- rfm -->
+      <rect class="box" x="820" y="220" width="180" height="140" rx="4"/>
+      <text class="tb" x="835" y="250">RFM95W</text>
+      <text class="s" x="835" y="270">Adafruit #3072</text>
+      <text class="s" x="835" y="288">915 MHz LoRa</text>
+      <text class="s" x="835" y="306">VIN 3V3 · GND</text>
+      <path class="w" d="M910,220 V160 M896,140 L910,160 L924,140"/>
+      <text class="t" x="930" y="170">wire antenna</text>
+      <text class="s" x="930" y="186">¼ wave, 78 mm</text>
+      <line class="lora" x1="940" y1="120" x2="1060" y2="80" marker-end="url(#al)"/>
+      <text class="tl" x="960" y="70">to base receiver</text>
+      <!-- power -->
+      <path class="pwr" d="M420,465 H40 V130 H58" marker-end="url(#ap)"/>
+      <path class="pwr" d="M40,210 H58" marker-end="url(#ap)"/>
+      <path class="pwr" d="M40,320 H58" marker-end="url(#ap)"/>
+      <path class="pwr" d="M40,400 H58" marker-end="url(#ap)"/>
+      <path class="pwr" d="M680,465 H910 V362" marker-end="url(#ap)"/>
+      <text class="tp" x="250" y="458">3V3 rail (breadboard + rail)</text>
+      <rect class="box" x="450" y="545" width="200" height="56" rx="4"/>
+      <text class="tb" x="465" y="569">USB power bank</text>
+      <text class="tpl" x="465" y="589">not owned yet</text>
+      <line class="pwr" x1="550" y1="545" x2="550" y2="502" marker-end="url(#ap)"/>
+      <text class="tp" x="560" y="528">5 V</text>
+      <text class="s" x="700" y="580">GND: all parts share the breadboard − rail (not drawn)</text>
+      <text class="s" x="700" y="598">GPIO17/18 free</text>
+    </svg>
+    <figcaption>Two mics per I2S bus share BCLK/WS/SD; SEL picks the left or right time slot. Board regulator turns USB 5 V into 3.3 V for mics and radio.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Part pin</th><th>ESP32-S3 pin</th><th>Signal direction</th></tr></thead>
+    <tbody>
+      <tr><td>Mic 0+1 BCLK / WS</td><td>GPIO4 / GPIO5</td><td>ESP32 → mic</td></tr>
+      <tr><td>Mic 0+1 DOUT (SD)</td><td>GPIO6</td><td>mic → ESP32</td></tr>
+      <tr><td>Mic 2+3 BCLK / WS</td><td>GPIO7 / GPIO15</td><td>ESP32 → mic</td></tr>
+      <tr><td>Mic 2+3 DOUT (SD)</td><td>GPIO16</td><td>mic → ESP32</td></tr>
+      <tr><td>Mic 3V / GND</td><td>3V3 / GND</td><td>power</td></tr>
+      <tr><td>Mic SEL</td><td>Mic 0, 2 → GND · Mic 1, 3 → 3V3</td><td>fixed</td></tr>
+      <tr><td>RFM95W SCK / MOSI / CS / RST</td><td>GPIO12 / GPIO11 / GPIO10 / GPIO9</td><td>ESP32 → radio</td></tr>
+      <tr><td>RFM95W MISO / G0 (DIO0)</td><td>GPIO13 / GPIO8</td><td>radio → ESP32</td></tr>
+      <tr><td>RFM95W VIN / GND</td><td>3V3 / GND</td><td>power</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>Part pin</b>: label on the breakout board. <b>ESP32-S3 pin</b>: GPIO number on the DevKitC. <b>Signal direction</b>: which side drives the wire.</p>
+</section>
+
+<section>
+  <h2>Node breadboard layout, to scale</h2>
+  <p class="def" style="max-width:85ch">Outlines from the manufacturers' design files: ESP32-S3-DevKitC-1 v1.1 dimension drawing (Espressif), ICS-43434 breakout and RFM95W breakout board files (Adafruit). Breadboard: 830-point, 165.1 × 54.6 mm, 63 rows, 2.54 mm pitch, 7.62 mm center channel. Power rail positions are within ±1 mm (not dimensioned by the maker).</p>
+  <figure>
+<svg viewBox="0 0 1000 490" role="img" aria-label="Full breadboard drawn to scale, 5 pixels per millimetre, with the mic breakouts, RFM95W and ESP32-S3-DevKitC-1 at their real sizes.">
+<text class="s" x="60" y="20">Scale 5 px = 1 mm · left end = top when mounted · row numbers along top</text>
+<rect class="box2" x="60.0" y="90.0" width="825.5" height="273.0" rx="6"/>
+<rect x="67.5" y="218.0" width="810.5" height="17.0" class="chan"/>
+<line class="pwr" x1="70.0" y1="118.55" x2="875.5" y2="118.55" opacity=".35"/>
+<line class="w" x1="70.0" y1="131.25" x2="875.5" y2="131.25" opacity=".35"/>
+<line class="w" x1="70.0" y1="334.45" x2="875.5" y2="334.45" opacity=".35"/>
+<line class="pwr" x1="70.0" y1="321.75" x2="875.5" y2="321.75" opacity=".35"/>
+<g class="hole"><circle cx="79.0" cy="156.7" r="2.1"/><circle cx="79.0" cy="169.3" r="2.1"/><circle cx="79.0" cy="182.1" r="2.1"/><circle cx="79.0" cy="194.8" r="2.1"/><circle cx="79.0" cy="207.4" r="2.1"/><circle cx="79.0" cy="245.6" r="2.1"/><circle cx="79.0" cy="258.2" r="2.1"/><circle cx="79.0" cy="270.9" r="2.1"/><circle cx="79.0" cy="283.6" r="2.1"/><circle cx="79.0" cy="296.4" r="2.1"/><circle cx="91.7" cy="156.7" r="2.1"/><circle cx="91.7" cy="169.3" r="2.1"/><circle cx="91.7" cy="182.1" r="2.1"/><circle cx="91.7" cy="194.8" r="2.1"/><circle cx="91.7" cy="207.4" r="2.1"/><circle cx="91.7" cy="245.6" r="2.1"/><circle cx="91.7" cy="258.2" r="2.1"/><circle cx="91.7" cy="270.9" r="2.1"/><circle cx="91.7" cy="283.6" r="2.1"/><circle cx="91.7" cy="296.4" r="2.1"/><circle cx="104.4" cy="156.7" r="2.1"/><circle cx="104.4" cy="169.3" r="2.1"/><circle cx="104.4" cy="182.1" r="2.1"/><circle cx="104.4" cy="194.8" r="2.1"/><circle cx="104.4" cy="207.4" r="2.1"/><circle cx="104.4" cy="245.6" r="2.1"/><circle cx="104.4" cy="258.2" r="2.1"/><circle cx="104.4" cy="270.9" r="2.1"/><circle cx="104.4" cy="283.6" r="2.1"/><circle cx="104.4" cy="296.4" r="2.1"/><circle cx="117.1" cy="156.7" r="2.1"/><circle cx="117.1" cy="169.3" r="2.1"/><circle cx="117.1" cy="182.1" r="2.1"/><circle cx="117.1" cy="194.8" r="2.1"/><circle cx="117.1" cy="207.4" r="2.1"/><circle cx="117.1" cy="245.6" r="2.1"/><circle cx="117.1" cy="258.2" r="2.1"/><circle cx="117.1" cy="270.9" r="2.1"/><circle cx="117.1" cy="283.6" r="2.1"/><circle cx="117.1" cy="296.4" r="2.1"/><circle cx="129.8" cy="156.7" r="2.1"/><circle cx="129.8" cy="169.3" r="2.1"/><circle cx="129.8" cy="182.1" r="2.1"/><circle cx="129.8" cy="194.8" r="2.1"/><circle cx="129.8" cy="207.4" r="2.1"/><circle cx="129.8" cy="245.6" r="2.1"/><circle cx="129.8" cy="258.2" r="2.1"/><circle cx="129.8" cy="270.9" r="2.1"/><circle cx="129.8" cy="283.6" r="2.1"/><circle cx="129.8" cy="296.4" r="2.1"/><circle cx="142.5" cy="156.7" r="2.1"/><circle cx="142.5" cy="169.3" r="2.1"/><circle cx="142.5" cy="182.1" r="2.1"/><circle cx="142.5" cy="194.8" r="2.1"/><circle cx="142.5" cy="207.4" r="2.1"/><circle cx="142.5" cy="245.6" r="2.1"/><circle cx="142.5" cy="258.2" r="2.1"/><circle cx="142.5" cy="270.9" r="2.1"/><circle cx="142.5" cy="283.6" r="2.1"/><circle cx="142.5" cy="296.4" r="2.1"/><circle cx="155.2" cy="156.7" r="2.1"/><circle cx="155.2" cy="169.3" r="2.1"/><circle cx="155.2" cy="182.1" r="2.1"/><circle cx="155.2" cy="194.8" r="2.1"/><circle cx="155.2" cy="207.4" r="2.1"/><circle cx="155.2" cy="245.6" r="2.1"/><circle cx="155.2" cy="258.2" r="2.1"/><circle cx="155.2" cy="270.9" r="2.1"/><circle cx="155.2" cy="283.6" r="2.1"/><circle cx="155.2" cy="296.4" r="2.1"/><circle cx="167.9" cy="156.7" r="2.1"/><circle cx="167.9" cy="169.3" r="2.1"/><circle cx="167.9" cy="182.1" r="2.1"/><circle cx="167.9" cy="194.8" r="2.1"/><circle cx="167.9" cy="207.4" r="2.1"/><circle cx="167.9" cy="245.6" r="2.1"/><circle cx="167.9" cy="258.2" r="2.1"/><circle cx="167.9" cy="270.9" r="2.1"/><circle cx="167.9" cy="283.6" r="2.1"/><circle cx="167.9" cy="296.4" r="2.1"/><circle cx="180.6" cy="156.7" r="2.1"/><circle cx="180.6" cy="169.3" r="2.1"/><circle cx="180.6" cy="182.1" r="2.1"/><circle cx="180.6" cy="194.8" r="2.1"/><circle cx="180.6" cy="207.4" r="2.1"/><circle cx="180.6" cy="245.6" r="2.1"/><circle cx="180.6" cy="258.2" r="2.1"/><circle cx="180.6" cy="270.9" r="2.1"/><circle cx="180.6" cy="283.6" r="2.1"/><circle cx="180.6" cy="296.4" r="2.1"/><circle cx="193.3" cy="156.7" r="2.1"/><circle cx="193.3" cy="169.3" r="2.1"/><circle cx="193.3" cy="182.1" r="2.1"/><circle cx="193.3" cy="194.8" r="2.1"/><circle cx="193.3" cy="207.4" r="2.1"/><circle cx="193.3" cy="245.6" r="2.1"/><circle cx="193.3" cy="258.2" r="2.1"/><circle cx="193.3" cy="270.9" r="2.1"/><circle cx="193.3" cy="283.6" r="2.1"/><circle cx="193.3" cy="296.4" r="2.1"/><circle cx="206.0" cy="156.7" r="2.1"/><circle cx="206.0" cy="169.3" r="2.1"/><circle cx="206.0" cy="182.1" r="2.1"/><circle cx="206.0" cy="194.8" r="2.1"/><circle cx="206.0" cy="207.4" r="2.1"/><circle cx="206.0" cy="245.6" r="2.1"/><circle cx="206.0" cy="258.2" r="2.1"/><circle cx="206.0" cy="270.9" r="2.1"/><circle cx="206.0" cy="283.6" r="2.1"/><circle cx="206.0" cy="296.4" r="2.1"/><circle cx="218.7" cy="156.7" r="2.1"/><circle cx="218.7" cy="169.3" r="2.1"/><circle cx="218.7" cy="182.1" r="2.1"/><circle cx="218.7" cy="194.8" r="2.1"/><circle cx="218.7" cy="207.4" r="2.1"/><circle cx="218.7" cy="245.6" r="2.1"/><circle cx="218.7" cy="258.2" r="2.1"/><circle cx="218.7" cy="270.9" r="2.1"/><circle cx="218.7" cy="283.6" r="2.1"/><circle cx="218.7" cy="296.4" r="2.1"/><circle cx="231.4" cy="156.7" r="2.1"/><circle cx="231.4" cy="169.3" r="2.1"/><circle cx="231.4" cy="182.1" r="2.1"/><circle cx="231.4" cy="194.8" r="2.1"/><circle cx="231.4" cy="207.4" r="2.1"/><circle cx="231.4" cy="245.6" r="2.1"/><circle cx="231.4" cy="258.2" r="2.1"/><circle cx="231.4" cy="270.9" r="2.1"/><circle cx="231.4" cy="283.6" r="2.1"/><circle cx="231.4" cy="296.4" r="2.1"/><circle cx="244.1" cy="156.7" r="2.1"/><circle cx="244.1" cy="169.3" r="2.1"/><circle cx="244.1" cy="182.1" r="2.1"/><circle cx="244.1" cy="194.8" r="2.1"/><circle cx="244.1" cy="207.4" r="2.1"/><circle cx="244.1" cy="245.6" r="2.1"/><circle cx="244.1" cy="258.2" r="2.1"/><circle cx="244.1" cy="270.9" r="2.1"/><circle cx="244.1" cy="283.6" r="2.1"/><circle cx="244.1" cy="296.4" r="2.1"/><circle cx="256.8" cy="156.7" r="2.1"/><circle cx="256.8" cy="169.3" r="2.1"/><circle cx="256.8" cy="182.1" r="2.1"/><circle cx="256.8" cy="194.8" r="2.1"/><circle cx="256.8" cy="207.4" r="2.1"/><circle cx="256.8" cy="245.6" r="2.1"/><circle cx="256.8" cy="258.2" r="2.1"/><circle cx="256.8" cy="270.9" r="2.1"/><circle cx="256.8" cy="283.6" r="2.1"/><circle cx="256.8" cy="296.4" r="2.1"/><circle cx="269.5" cy="156.7" r="2.1"/><circle cx="269.5" cy="169.3" r="2.1"/><circle cx="269.5" cy="182.1" r="2.1"/><circle cx="269.5" cy="194.8" r="2.1"/><circle cx="269.5" cy="207.4" r="2.1"/><circle cx="269.5" cy="245.6" r="2.1"/><circle cx="269.5" cy="258.2" r="2.1"/><circle cx="269.5" cy="270.9" r="2.1"/><circle cx="269.5" cy="283.6" r="2.1"/><circle cx="269.5" cy="296.4" r="2.1"/><circle cx="282.2" cy="156.7" r="2.1"/><circle cx="282.2" cy="169.3" r="2.1"/><circle cx="282.2" cy="182.1" r="2.1"/><circle cx="282.2" cy="194.8" r="2.1"/><circle cx="282.2" cy="207.4" r="2.1"/><circle cx="282.2" cy="245.6" r="2.1"/><circle cx="282.2" cy="258.2" r="2.1"/><circle cx="282.2" cy="270.9" r="2.1"/><circle cx="282.2" cy="283.6" r="2.1"/><circle cx="282.2" cy="296.4" r="2.1"/><circle cx="294.9" cy="156.7" r="2.1"/><circle cx="294.9" cy="169.3" r="2.1"/><circle cx="294.9" cy="182.1" r="2.1"/><circle cx="294.9" cy="194.8" r="2.1"/><circle cx="294.9" cy="207.4" r="2.1"/><circle cx="294.9" cy="245.6" r="2.1"/><circle cx="294.9" cy="258.2" r="2.1"/><circle cx="294.9" cy="270.9" r="2.1"/><circle cx="294.9" cy="283.6" r="2.1"/><circle cx="294.9" cy="296.4" r="2.1"/><circle cx="307.6" cy="156.7" r="2.1"/><circle cx="307.6" cy="169.3" r="2.1"/><circle cx="307.6" cy="182.1" r="2.1"/><circle cx="307.6" cy="194.8" r="2.1"/><circle cx="307.6" cy="207.4" r="2.1"/><circle cx="307.6" cy="245.6" r="2.1"/><circle cx="307.6" cy="258.2" r="2.1"/><circle cx="307.6" cy="270.9" r="2.1"/><circle cx="307.6" cy="283.6" r="2.1"/><circle cx="307.6" cy="296.4" r="2.1"/><circle cx="320.3" cy="156.7" r="2.1"/><circle cx="320.3" cy="169.3" r="2.1"/><circle cx="320.3" cy="182.1" r="2.1"/><circle cx="320.3" cy="194.8" r="2.1"/><circle cx="320.3" cy="207.4" r="2.1"/><circle cx="320.3" cy="245.6" r="2.1"/><circle cx="320.3" cy="258.2" r="2.1"/><circle cx="320.3" cy="270.9" r="2.1"/><circle cx="320.3" cy="283.6" r="2.1"/><circle cx="320.3" cy="296.4" r="2.1"/><circle cx="333.0" cy="156.7" r="2.1"/><circle cx="333.0" cy="169.3" r="2.1"/><circle cx="333.0" cy="182.1" r="2.1"/><circle cx="333.0" cy="194.8" r="2.1"/><circle cx="333.0" cy="207.4" r="2.1"/><circle cx="333.0" cy="245.6" r="2.1"/><circle cx="333.0" cy="258.2" r="2.1"/><circle cx="333.0" cy="270.9" r="2.1"/><circle cx="333.0" cy="283.6" r="2.1"/><circle cx="333.0" cy="296.4" r="2.1"/><circle cx="345.7" cy="156.7" r="2.1"/><circle cx="345.7" cy="169.3" r="2.1"/><circle cx="345.7" cy="182.1" r="2.1"/><circle cx="345.7" cy="194.8" r="2.1"/><circle cx="345.7" cy="207.4" r="2.1"/><circle cx="345.7" cy="245.6" r="2.1"/><circle cx="345.7" cy="258.2" r="2.1"/><circle cx="345.7" cy="270.9" r="2.1"/><circle cx="345.7" cy="283.6" r="2.1"/><circle cx="345.7" cy="296.4" r="2.1"/><circle cx="358.4" cy="156.7" r="2.1"/><circle cx="358.4" cy="169.3" r="2.1"/><circle cx="358.4" cy="182.1" r="2.1"/><circle cx="358.4" cy="194.8" r="2.1"/><circle cx="358.4" cy="207.4" r="2.1"/><circle cx="358.4" cy="245.6" r="2.1"/><circle cx="358.4" cy="258.2" r="2.1"/><circle cx="358.4" cy="270.9" r="2.1"/><circle cx="358.4" cy="283.6" r="2.1"/><circle cx="358.4" cy="296.4" r="2.1"/><circle cx="371.1" cy="156.7" r="2.1"/><circle cx="371.1" cy="169.3" r="2.1"/><circle cx="371.1" cy="182.1" r="2.1"/><circle cx="371.1" cy="194.8" r="2.1"/><circle cx="371.1" cy="207.4" r="2.1"/><circle cx="371.1" cy="245.6" r="2.1"/><circle cx="371.1" cy="258.2" r="2.1"/><circle cx="371.1" cy="270.9" r="2.1"/><circle cx="371.1" cy="283.6" r="2.1"/><circle cx="371.1" cy="296.4" r="2.1"/><circle cx="383.8" cy="156.7" r="2.1"/><circle cx="383.8" cy="169.3" r="2.1"/><circle cx="383.8" cy="182.1" r="2.1"/><circle cx="383.8" cy="194.8" r="2.1"/><circle cx="383.8" cy="207.4" r="2.1"/><circle cx="383.8" cy="245.6" r="2.1"/><circle cx="383.8" cy="258.2" r="2.1"/><circle cx="383.8" cy="270.9" r="2.1"/><circle cx="383.8" cy="283.6" r="2.1"/><circle cx="383.8" cy="296.4" r="2.1"/><circle cx="396.5" cy="156.7" r="2.1"/><circle cx="396.5" cy="169.3" r="2.1"/><circle cx="396.5" cy="182.1" r="2.1"/><circle cx="396.5" cy="194.8" r="2.1"/><circle cx="396.5" cy="207.4" r="2.1"/><circle cx="396.5" cy="245.6" r="2.1"/><circle cx="396.5" cy="258.2" r="2.1"/><circle cx="396.5" cy="270.9" r="2.1"/><circle cx="396.5" cy="283.6" r="2.1"/><circle cx="396.5" cy="296.4" r="2.1"/><circle cx="409.2" cy="156.7" r="2.1"/><circle cx="409.2" cy="169.3" r="2.1"/><circle cx="409.2" cy="182.1" r="2.1"/><circle cx="409.2" cy="194.8" r="2.1"/><circle cx="409.2" cy="207.4" r="2.1"/><circle cx="409.2" cy="245.6" r="2.1"/><circle cx="409.2" cy="258.2" r="2.1"/><circle cx="409.2" cy="270.9" r="2.1"/><circle cx="409.2" cy="283.6" r="2.1"/><circle cx="409.2" cy="296.4" r="2.1"/><circle cx="421.9" cy="156.7" r="2.1"/><circle cx="421.9" cy="169.3" r="2.1"/><circle cx="421.9" cy="182.1" r="2.1"/><circle cx="421.9" cy="194.8" r="2.1"/><circle cx="421.9" cy="207.4" r="2.1"/><circle cx="421.9" cy="245.6" r="2.1"/><circle cx="421.9" cy="258.2" r="2.1"/><circle cx="421.9" cy="270.9" r="2.1"/><circle cx="421.9" cy="283.6" r="2.1"/><circle cx="421.9" cy="296.4" r="2.1"/><circle cx="434.6" cy="156.7" r="2.1"/><circle cx="434.6" cy="169.3" r="2.1"/><circle cx="434.6" cy="182.1" r="2.1"/><circle cx="434.6" cy="194.8" r="2.1"/><circle cx="434.6" cy="207.4" r="2.1"/><circle cx="434.6" cy="245.6" r="2.1"/><circle cx="434.6" cy="258.2" r="2.1"/><circle cx="434.6" cy="270.9" r="2.1"/><circle cx="434.6" cy="283.6" r="2.1"/><circle cx="434.6" cy="296.4" r="2.1"/><circle cx="447.3" cy="156.7" r="2.1"/><circle cx="447.3" cy="169.3" r="2.1"/><circle cx="447.3" cy="182.1" r="2.1"/><circle cx="447.3" cy="194.8" r="2.1"/><circle cx="447.3" cy="207.4" r="2.1"/><circle cx="447.3" cy="245.6" r="2.1"/><circle cx="447.3" cy="258.2" r="2.1"/><circle cx="447.3" cy="270.9" r="2.1"/><circle cx="447.3" cy="283.6" r="2.1"/><circle cx="447.3" cy="296.4" r="2.1"/><circle cx="460.0" cy="156.7" r="2.1"/><circle cx="460.0" cy="169.3" r="2.1"/><circle cx="460.0" cy="182.1" r="2.1"/><circle cx="460.0" cy="194.8" r="2.1"/><circle cx="460.0" cy="207.4" r="2.1"/><circle cx="460.0" cy="245.6" r="2.1"/><circle cx="460.0" cy="258.2" r="2.1"/><circle cx="460.0" cy="270.9" r="2.1"/><circle cx="460.0" cy="283.6" r="2.1"/><circle cx="460.0" cy="296.4" r="2.1"/><circle cx="472.7" cy="156.7" r="2.1"/><circle cx="472.7" cy="169.3" r="2.1"/><circle cx="472.7" cy="182.1" r="2.1"/><circle cx="472.7" cy="194.8" r="2.1"/><circle cx="472.7" cy="207.4" r="2.1"/><circle cx="472.7" cy="245.6" r="2.1"/><circle cx="472.7" cy="258.2" r="2.1"/><circle cx="472.7" cy="270.9" r="2.1"/><circle cx="472.7" cy="283.6" r="2.1"/><circle cx="472.7" cy="296.4" r="2.1"/><circle cx="485.4" cy="156.7" r="2.1"/><circle cx="485.4" cy="169.3" r="2.1"/><circle cx="485.4" cy="182.1" r="2.1"/><circle cx="485.4" cy="194.8" r="2.1"/><circle cx="485.4" cy="207.4" r="2.1"/><circle cx="485.4" cy="245.6" r="2.1"/><circle cx="485.4" cy="258.2" r="2.1"/><circle cx="485.4" cy="270.9" r="2.1"/><circle cx="485.4" cy="283.6" r="2.1"/><circle cx="485.4" cy="296.4" r="2.1"/><circle cx="498.1" cy="156.7" r="2.1"/><circle cx="498.1" cy="169.3" r="2.1"/><circle cx="498.1" cy="182.1" r="2.1"/><circle cx="498.1" cy="194.8" r="2.1"/><circle cx="498.1" cy="207.4" r="2.1"/><circle cx="498.1" cy="245.6" r="2.1"/><circle cx="498.1" cy="258.2" r="2.1"/><circle cx="498.1" cy="270.9" r="2.1"/><circle cx="498.1" cy="283.6" r="2.1"/><circle cx="498.1" cy="296.4" r="2.1"/><circle cx="510.8" cy="156.7" r="2.1"/><circle cx="510.8" cy="169.3" r="2.1"/><circle cx="510.8" cy="182.1" r="2.1"/><circle cx="510.8" cy="194.8" r="2.1"/><circle cx="510.8" cy="207.4" r="2.1"/><circle cx="510.8" cy="245.6" r="2.1"/><circle cx="510.8" cy="258.2" r="2.1"/><circle cx="510.8" cy="270.9" r="2.1"/><circle cx="510.8" cy="283.6" r="2.1"/><circle cx="510.8" cy="296.4" r="2.1"/><circle cx="523.5" cy="156.7" r="2.1"/><circle cx="523.5" cy="169.3" r="2.1"/><circle cx="523.5" cy="182.1" r="2.1"/><circle cx="523.5" cy="194.8" r="2.1"/><circle cx="523.5" cy="207.4" r="2.1"/><circle cx="523.5" cy="245.6" r="2.1"/><circle cx="523.5" cy="258.2" r="2.1"/><circle cx="523.5" cy="270.9" r="2.1"/><circle cx="523.5" cy="283.6" r="2.1"/><circle cx="523.5" cy="296.4" r="2.1"/><circle cx="536.2" cy="156.7" r="2.1"/><circle cx="536.2" cy="169.3" r="2.1"/><circle cx="536.2" cy="182.1" r="2.1"/><circle cx="536.2" cy="194.8" r="2.1"/><circle cx="536.2" cy="207.4" r="2.1"/><circle cx="536.2" cy="245.6" r="2.1"/><circle cx="536.2" cy="258.2" r="2.1"/><circle cx="536.2" cy="270.9" r="2.1"/><circle cx="536.2" cy="283.6" r="2.1"/><circle cx="536.2" cy="296.4" r="2.1"/><circle cx="548.9" cy="156.7" r="2.1"/><circle cx="548.9" cy="169.3" r="2.1"/><circle cx="548.9" cy="182.1" r="2.1"/><circle cx="548.9" cy="194.8" r="2.1"/><circle cx="548.9" cy="207.4" r="2.1"/><circle cx="548.9" cy="245.6" r="2.1"/><circle cx="548.9" cy="258.2" r="2.1"/><circle cx="548.9" cy="270.9" r="2.1"/><circle cx="548.9" cy="283.6" r="2.1"/><circle cx="548.9" cy="296.4" r="2.1"/><circle cx="561.6" cy="156.7" r="2.1"/><circle cx="561.6" cy="169.3" r="2.1"/><circle cx="561.6" cy="182.1" r="2.1"/><circle cx="561.6" cy="194.8" r="2.1"/><circle cx="561.6" cy="207.4" r="2.1"/><circle cx="561.6" cy="245.6" r="2.1"/><circle cx="561.6" cy="258.2" r="2.1"/><circle cx="561.6" cy="270.9" r="2.1"/><circle cx="561.6" cy="283.6" r="2.1"/><circle cx="561.6" cy="296.4" r="2.1"/><circle cx="574.3" cy="156.7" r="2.1"/><circle cx="574.3" cy="169.3" r="2.1"/><circle cx="574.3" cy="182.1" r="2.1"/><circle cx="574.3" cy="194.8" r="2.1"/><circle cx="574.3" cy="207.4" r="2.1"/><circle cx="574.3" cy="245.6" r="2.1"/><circle cx="574.3" cy="258.2" r="2.1"/><circle cx="574.3" cy="270.9" r="2.1"/><circle cx="574.3" cy="283.6" r="2.1"/><circle cx="574.3" cy="296.4" r="2.1"/><circle cx="587.0" cy="156.7" r="2.1"/><circle cx="587.0" cy="169.3" r="2.1"/><circle cx="587.0" cy="182.1" r="2.1"/><circle cx="587.0" cy="194.8" r="2.1"/><circle cx="587.0" cy="207.4" r="2.1"/><circle cx="587.0" cy="245.6" r="2.1"/><circle cx="587.0" cy="258.2" r="2.1"/><circle cx="587.0" cy="270.9" r="2.1"/><circle cx="587.0" cy="283.6" r="2.1"/><circle cx="587.0" cy="296.4" r="2.1"/><circle cx="599.7" cy="156.7" r="2.1"/><circle cx="599.7" cy="169.3" r="2.1"/><circle cx="599.7" cy="182.1" r="2.1"/><circle cx="599.7" cy="194.8" r="2.1"/><circle cx="599.7" cy="207.4" r="2.1"/><circle cx="599.7" cy="245.6" r="2.1"/><circle cx="599.7" cy="258.2" r="2.1"/><circle cx="599.7" cy="270.9" r="2.1"/><circle cx="599.7" cy="283.6" r="2.1"/><circle cx="599.7" cy="296.4" r="2.1"/><circle cx="612.4" cy="156.7" r="2.1"/><circle cx="612.4" cy="169.3" r="2.1"/><circle cx="612.4" cy="182.1" r="2.1"/><circle cx="612.4" cy="194.8" r="2.1"/><circle cx="612.4" cy="207.4" r="2.1"/><circle cx="612.4" cy="245.6" r="2.1"/><circle cx="612.4" cy="258.2" r="2.1"/><circle cx="612.4" cy="270.9" r="2.1"/><circle cx="612.4" cy="283.6" r="2.1"/><circle cx="612.4" cy="296.4" r="2.1"/><circle cx="625.1" cy="156.7" r="2.1"/><circle cx="625.1" cy="169.3" r="2.1"/><circle cx="625.1" cy="182.1" r="2.1"/><circle cx="625.1" cy="194.8" r="2.1"/><circle cx="625.1" cy="207.4" r="2.1"/><circle cx="625.1" cy="245.6" r="2.1"/><circle cx="625.1" cy="258.2" r="2.1"/><circle cx="625.1" cy="270.9" r="2.1"/><circle cx="625.1" cy="283.6" r="2.1"/><circle cx="625.1" cy="296.4" r="2.1"/><circle cx="637.8" cy="156.7" r="2.1"/><circle cx="637.8" cy="169.3" r="2.1"/><circle cx="637.8" cy="182.1" r="2.1"/><circle cx="637.8" cy="194.8" r="2.1"/><circle cx="637.8" cy="207.4" r="2.1"/><circle cx="637.8" cy="245.6" r="2.1"/><circle cx="637.8" cy="258.2" r="2.1"/><circle cx="637.8" cy="270.9" r="2.1"/><circle cx="637.8" cy="283.6" r="2.1"/><circle cx="637.8" cy="296.4" r="2.1"/><circle cx="650.5" cy="156.7" r="2.1"/><circle cx="650.5" cy="169.3" r="2.1"/><circle cx="650.5" cy="182.1" r="2.1"/><circle cx="650.5" cy="194.8" r="2.1"/><circle cx="650.5" cy="207.4" r="2.1"/><circle cx="650.5" cy="245.6" r="2.1"/><circle cx="650.5" cy="258.2" r="2.1"/><circle cx="650.5" cy="270.9" r="2.1"/><circle cx="650.5" cy="283.6" r="2.1"/><circle cx="650.5" cy="296.4" r="2.1"/><circle cx="663.2" cy="156.7" r="2.1"/><circle cx="663.2" cy="169.3" r="2.1"/><circle cx="663.2" cy="182.1" r="2.1"/><circle cx="663.2" cy="194.8" r="2.1"/><circle cx="663.2" cy="207.4" r="2.1"/><circle cx="663.2" cy="245.6" r="2.1"/><circle cx="663.2" cy="258.2" r="2.1"/><circle cx="663.2" cy="270.9" r="2.1"/><circle cx="663.2" cy="283.6" r="2.1"/><circle cx="663.2" cy="296.4" r="2.1"/><circle cx="675.9" cy="156.7" r="2.1"/><circle cx="675.9" cy="169.3" r="2.1"/><circle cx="675.9" cy="182.1" r="2.1"/><circle cx="675.9" cy="194.8" r="2.1"/><circle cx="675.9" cy="207.4" r="2.1"/><circle cx="675.9" cy="245.6" r="2.1"/><circle cx="675.9" cy="258.2" r="2.1"/><circle cx="675.9" cy="270.9" r="2.1"/><circle cx="675.9" cy="283.6" r="2.1"/><circle cx="675.9" cy="296.4" r="2.1"/><circle cx="688.6" cy="156.7" r="2.1"/><circle cx="688.6" cy="169.3" r="2.1"/><circle cx="688.6" cy="182.1" r="2.1"/><circle cx="688.6" cy="194.8" r="2.1"/><circle cx="688.6" cy="207.4" r="2.1"/><circle cx="688.6" cy="245.6" r="2.1"/><circle cx="688.6" cy="258.2" r="2.1"/><circle cx="688.6" cy="270.9" r="2.1"/><circle cx="688.6" cy="283.6" r="2.1"/><circle cx="688.6" cy="296.4" r="2.1"/><circle cx="701.3" cy="156.7" r="2.1"/><circle cx="701.3" cy="169.3" r="2.1"/><circle cx="701.3" cy="182.1" r="2.1"/><circle cx="701.3" cy="194.8" r="2.1"/><circle cx="701.3" cy="207.4" r="2.1"/><circle cx="701.3" cy="245.6" r="2.1"/><circle cx="701.3" cy="258.2" r="2.1"/><circle cx="701.3" cy="270.9" r="2.1"/><circle cx="701.3" cy="283.6" r="2.1"/><circle cx="701.3" cy="296.4" r="2.1"/><circle cx="714.0" cy="156.7" r="2.1"/><circle cx="714.0" cy="169.3" r="2.1"/><circle cx="714.0" cy="182.1" r="2.1"/><circle cx="714.0" cy="194.8" r="2.1"/><circle cx="714.0" cy="207.4" r="2.1"/><circle cx="714.0" cy="245.6" r="2.1"/><circle cx="714.0" cy="258.2" r="2.1"/><circle cx="714.0" cy="270.9" r="2.1"/><circle cx="714.0" cy="283.6" r="2.1"/><circle cx="714.0" cy="296.4" r="2.1"/><circle cx="726.7" cy="156.7" r="2.1"/><circle cx="726.7" cy="169.3" r="2.1"/><circle cx="726.7" cy="182.1" r="2.1"/><circle cx="726.7" cy="194.8" r="2.1"/><circle cx="726.7" cy="207.4" r="2.1"/><circle cx="726.7" cy="245.6" r="2.1"/><circle cx="726.7" cy="258.2" r="2.1"/><circle cx="726.7" cy="270.9" r="2.1"/><circle cx="726.7" cy="283.6" r="2.1"/><circle cx="726.7" cy="296.4" r="2.1"/><circle cx="739.4" cy="156.7" r="2.1"/><circle cx="739.4" cy="169.3" r="2.1"/><circle cx="739.4" cy="182.1" r="2.1"/><circle cx="739.4" cy="194.8" r="2.1"/><circle cx="739.4" cy="207.4" r="2.1"/><circle cx="739.4" cy="245.6" r="2.1"/><circle cx="739.4" cy="258.2" r="2.1"/><circle cx="739.4" cy="270.9" r="2.1"/><circle cx="739.4" cy="283.6" r="2.1"/><circle cx="739.4" cy="296.4" r="2.1"/><circle cx="752.1" cy="156.7" r="2.1"/><circle cx="752.1" cy="169.3" r="2.1"/><circle cx="752.1" cy="182.1" r="2.1"/><circle cx="752.1" cy="194.8" r="2.1"/><circle cx="752.1" cy="207.4" r="2.1"/><circle cx="752.1" cy="245.6" r="2.1"/><circle cx="752.1" cy="258.2" r="2.1"/><circle cx="752.1" cy="270.9" r="2.1"/><circle cx="752.1" cy="283.6" r="2.1"/><circle cx="752.1" cy="296.4" r="2.1"/><circle cx="764.8" cy="156.7" r="2.1"/><circle cx="764.8" cy="169.3" r="2.1"/><circle cx="764.8" cy="182.1" r="2.1"/><circle cx="764.8" cy="194.8" r="2.1"/><circle cx="764.8" cy="207.4" r="2.1"/><circle cx="764.8" cy="245.6" r="2.1"/><circle cx="764.8" cy="258.2" r="2.1"/><circle cx="764.8" cy="270.9" r="2.1"/><circle cx="764.8" cy="283.6" r="2.1"/><circle cx="764.8" cy="296.4" r="2.1"/><circle cx="777.5" cy="156.7" r="2.1"/><circle cx="777.5" cy="169.3" r="2.1"/><circle cx="777.5" cy="182.1" r="2.1"/><circle cx="777.5" cy="194.8" r="2.1"/><circle cx="777.5" cy="207.4" r="2.1"/><circle cx="777.5" cy="245.6" r="2.1"/><circle cx="777.5" cy="258.2" r="2.1"/><circle cx="777.5" cy="270.9" r="2.1"/><circle cx="777.5" cy="283.6" r="2.1"/><circle cx="777.5" cy="296.4" r="2.1"/><circle cx="790.2" cy="156.7" r="2.1"/><circle cx="790.2" cy="169.3" r="2.1"/><circle cx="790.2" cy="182.1" r="2.1"/><circle cx="790.2" cy="194.8" r="2.1"/><circle cx="790.2" cy="207.4" r="2.1"/><circle cx="790.2" cy="245.6" r="2.1"/><circle cx="790.2" cy="258.2" r="2.1"/><circle cx="790.2" cy="270.9" r="2.1"/><circle cx="790.2" cy="283.6" r="2.1"/><circle cx="790.2" cy="296.4" r="2.1"/><circle cx="802.9" cy="156.7" r="2.1"/><circle cx="802.9" cy="169.3" r="2.1"/><circle cx="802.9" cy="182.1" r="2.1"/><circle cx="802.9" cy="194.8" r="2.1"/><circle cx="802.9" cy="207.4" r="2.1"/><circle cx="802.9" cy="245.6" r="2.1"/><circle cx="802.9" cy="258.2" r="2.1"/><circle cx="802.9" cy="270.9" r="2.1"/><circle cx="802.9" cy="283.6" r="2.1"/><circle cx="802.9" cy="296.4" r="2.1"/><circle cx="815.6" cy="156.7" r="2.1"/><circle cx="815.6" cy="169.3" r="2.1"/><circle cx="815.6" cy="182.1" r="2.1"/><circle cx="815.6" cy="194.8" r="2.1"/><circle cx="815.6" cy="207.4" r="2.1"/><circle cx="815.6" cy="245.6" r="2.1"/><circle cx="815.6" cy="258.2" r="2.1"/><circle cx="815.6" cy="270.9" r="2.1"/><circle cx="815.6" cy="283.6" r="2.1"/><circle cx="815.6" cy="296.4" r="2.1"/><circle cx="828.3" cy="156.7" r="2.1"/><circle cx="828.3" cy="169.3" r="2.1"/><circle cx="828.3" cy="182.1" r="2.1"/><circle cx="828.3" cy="194.8" r="2.1"/><circle cx="828.3" cy="207.4" r="2.1"/><circle cx="828.3" cy="245.6" r="2.1"/><circle cx="828.3" cy="258.2" r="2.1"/><circle cx="828.3" cy="270.9" r="2.1"/><circle cx="828.3" cy="283.6" r="2.1"/><circle cx="828.3" cy="296.4" r="2.1"/><circle cx="841.0" cy="156.7" r="2.1"/><circle cx="841.0" cy="169.3" r="2.1"/><circle cx="841.0" cy="182.1" r="2.1"/><circle cx="841.0" cy="194.8" r="2.1"/><circle cx="841.0" cy="207.4" r="2.1"/><circle cx="841.0" cy="245.6" r="2.1"/><circle cx="841.0" cy="258.2" r="2.1"/><circle cx="841.0" cy="270.9" r="2.1"/><circle cx="841.0" cy="283.6" r="2.1"/><circle cx="841.0" cy="296.4" r="2.1"/><circle cx="853.7" cy="156.7" r="2.1"/><circle cx="853.7" cy="169.3" r="2.1"/><circle cx="853.7" cy="182.1" r="2.1"/><circle cx="853.7" cy="194.8" r="2.1"/><circle cx="853.7" cy="207.4" r="2.1"/><circle cx="853.7" cy="245.6" r="2.1"/><circle cx="853.7" cy="258.2" r="2.1"/><circle cx="853.7" cy="270.9" r="2.1"/><circle cx="853.7" cy="283.6" r="2.1"/><circle cx="853.7" cy="296.4" r="2.1"/><circle cx="866.4" cy="156.7" r="2.1"/><circle cx="866.4" cy="169.3" r="2.1"/><circle cx="866.4" cy="182.1" r="2.1"/><circle cx="866.4" cy="194.8" r="2.1"/><circle cx="866.4" cy="207.4" r="2.1"/><circle cx="866.4" cy="245.6" r="2.1"/><circle cx="866.4" cy="258.2" r="2.1"/><circle cx="866.4" cy="270.9" r="2.1"/><circle cx="866.4" cy="283.6" r="2.1"/><circle cx="866.4" cy="296.4" r="2.1"/><circle cx="91.7" cy="118.5" r="2.1"/><circle cx="104.4" cy="118.5" r="2.1"/><circle cx="117.1" cy="118.5" r="2.1"/><circle cx="129.8" cy="118.5" r="2.1"/><circle cx="142.5" cy="118.5" r="2.1"/><circle cx="167.9" cy="118.5" r="2.1"/><circle cx="180.6" cy="118.5" r="2.1"/><circle cx="193.3" cy="118.5" r="2.1"/><circle cx="206.0" cy="118.5" r="2.1"/><circle cx="218.7" cy="118.5" r="2.1"/><circle cx="244.1" cy="118.5" r="2.1"/><circle cx="256.8" cy="118.5" r="2.1"/><circle cx="269.5" cy="118.5" r="2.1"/><circle cx="282.2" cy="118.5" r="2.1"/><circle cx="294.9" cy="118.5" r="2.1"/><circle cx="320.3" cy="118.5" r="2.1"/><circle cx="333.0" cy="118.5" r="2.1"/><circle cx="345.7" cy="118.5" r="2.1"/><circle cx="358.4" cy="118.5" r="2.1"/><circle cx="371.1" cy="118.5" r="2.1"/><circle cx="396.5" cy="118.5" r="2.1"/><circle cx="409.2" cy="118.5" r="2.1"/><circle cx="421.9" cy="118.5" r="2.1"/><circle cx="434.6" cy="118.5" r="2.1"/><circle cx="447.3" cy="118.5" r="2.1"/><circle cx="472.7" cy="118.5" r="2.1"/><circle cx="485.4" cy="118.5" r="2.1"/><circle cx="498.1" cy="118.5" r="2.1"/><circle cx="510.8" cy="118.5" r="2.1"/><circle cx="523.5" cy="118.5" r="2.1"/><circle cx="548.9" cy="118.5" r="2.1"/><circle cx="561.6" cy="118.5" r="2.1"/><circle cx="574.3" cy="118.5" r="2.1"/><circle cx="587.0" cy="118.5" r="2.1"/><circle cx="599.7" cy="118.5" r="2.1"/><circle cx="625.1" cy="118.5" r="2.1"/><circle cx="637.8" cy="118.5" r="2.1"/><circle cx="650.5" cy="118.5" r="2.1"/><circle cx="663.2" cy="118.5" r="2.1"/><circle cx="675.9" cy="118.5" r="2.1"/><circle cx="701.3" cy="118.5" r="2.1"/><circle cx="714.0" cy="118.5" r="2.1"/><circle cx="726.7" cy="118.5" r="2.1"/><circle cx="739.4" cy="118.5" r="2.1"/><circle cx="752.1" cy="118.5" r="2.1"/><circle cx="777.5" cy="118.5" r="2.1"/><circle cx="790.2" cy="118.5" r="2.1"/><circle cx="802.9" cy="118.5" r="2.1"/><circle cx="815.6" cy="118.5" r="2.1"/><circle cx="828.3" cy="118.5" r="2.1"/><circle cx="91.7" cy="131.2" r="2.1"/><circle cx="104.4" cy="131.2" r="2.1"/><circle cx="117.1" cy="131.2" r="2.1"/><circle cx="129.8" cy="131.2" r="2.1"/><circle cx="142.5" cy="131.2" r="2.1"/><circle cx="167.9" cy="131.2" r="2.1"/><circle cx="180.6" cy="131.2" r="2.1"/><circle cx="193.3" cy="131.2" r="2.1"/><circle cx="206.0" cy="131.2" r="2.1"/><circle cx="218.7" cy="131.2" r="2.1"/><circle cx="244.1" cy="131.2" r="2.1"/><circle cx="256.8" cy="131.2" r="2.1"/><circle cx="269.5" cy="131.2" r="2.1"/><circle cx="282.2" cy="131.2" r="2.1"/><circle cx="294.9" cy="131.2" r="2.1"/><circle cx="320.3" cy="131.2" r="2.1"/><circle cx="333.0" cy="131.2" r="2.1"/><circle cx="345.7" cy="131.2" r="2.1"/><circle cx="358.4" cy="131.2" r="2.1"/><circle cx="371.1" cy="131.2" r="2.1"/><circle cx="396.5" cy="131.2" r="2.1"/><circle cx="409.2" cy="131.2" r="2.1"/><circle cx="421.9" cy="131.2" r="2.1"/><circle cx="434.6" cy="131.2" r="2.1"/><circle cx="447.3" cy="131.2" r="2.1"/><circle cx="472.7" cy="131.2" r="2.1"/><circle cx="485.4" cy="131.2" r="2.1"/><circle cx="498.1" cy="131.2" r="2.1"/><circle cx="510.8" cy="131.2" r="2.1"/><circle cx="523.5" cy="131.2" r="2.1"/><circle cx="548.9" cy="131.2" r="2.1"/><circle cx="561.6" cy="131.2" r="2.1"/><circle cx="574.3" cy="131.2" r="2.1"/><circle cx="587.0" cy="131.2" r="2.1"/><circle cx="599.7" cy="131.2" r="2.1"/><circle cx="625.1" cy="131.2" r="2.1"/><circle cx="637.8" cy="131.2" r="2.1"/><circle cx="650.5" cy="131.2" r="2.1"/><circle cx="663.2" cy="131.2" r="2.1"/><circle cx="675.9" cy="131.2" r="2.1"/><circle cx="701.3" cy="131.2" r="2.1"/><circle cx="714.0" cy="131.2" r="2.1"/><circle cx="726.7" cy="131.2" r="2.1"/><circle cx="739.4" cy="131.2" r="2.1"/><circle cx="752.1" cy="131.2" r="2.1"/><circle cx="777.5" cy="131.2" r="2.1"/><circle cx="790.2" cy="131.2" r="2.1"/><circle cx="802.9" cy="131.2" r="2.1"/><circle cx="815.6" cy="131.2" r="2.1"/><circle cx="828.3" cy="131.2" r="2.1"/><circle cx="91.7" cy="334.4" r="2.1"/><circle cx="104.4" cy="334.4" r="2.1"/><circle cx="117.1" cy="334.4" r="2.1"/><circle cx="129.8" cy="334.4" r="2.1"/><circle cx="142.5" cy="334.4" r="2.1"/><circle cx="167.9" cy="334.4" r="2.1"/><circle cx="180.6" cy="334.4" r="2.1"/><circle cx="193.3" cy="334.4" r="2.1"/><circle cx="206.0" cy="334.4" r="2.1"/><circle cx="218.7" cy="334.4" r="2.1"/><circle cx="244.1" cy="334.4" r="2.1"/><circle cx="256.8" cy="334.4" r="2.1"/><circle cx="269.5" cy="334.4" r="2.1"/><circle cx="282.2" cy="334.4" r="2.1"/><circle cx="294.9" cy="334.4" r="2.1"/><circle cx="320.3" cy="334.4" r="2.1"/><circle cx="333.0" cy="334.4" r="2.1"/><circle cx="345.7" cy="334.4" r="2.1"/><circle cx="358.4" cy="334.4" r="2.1"/><circle cx="371.1" cy="334.4" r="2.1"/><circle cx="396.5" cy="334.4" r="2.1"/><circle cx="409.2" cy="334.4" r="2.1"/><circle cx="421.9" cy="334.4" r="2.1"/><circle cx="434.6" cy="334.4" r="2.1"/><circle cx="447.3" cy="334.4" r="2.1"/><circle cx="472.7" cy="334.4" r="2.1"/><circle cx="485.4" cy="334.4" r="2.1"/><circle cx="498.1" cy="334.4" r="2.1"/><circle cx="510.8" cy="334.4" r="2.1"/><circle cx="523.5" cy="334.4" r="2.1"/><circle cx="548.9" cy="334.4" r="2.1"/><circle cx="561.6" cy="334.4" r="2.1"/><circle cx="574.3" cy="334.4" r="2.1"/><circle cx="587.0" cy="334.4" r="2.1"/><circle cx="599.7" cy="334.4" r="2.1"/><circle cx="625.1" cy="334.4" r="2.1"/><circle cx="637.8" cy="334.4" r="2.1"/><circle cx="650.5" cy="334.4" r="2.1"/><circle cx="663.2" cy="334.4" r="2.1"/><circle cx="675.9" cy="334.4" r="2.1"/><circle cx="701.3" cy="334.4" r="2.1"/><circle cx="714.0" cy="334.4" r="2.1"/><circle cx="726.7" cy="334.4" r="2.1"/><circle cx="739.4" cy="334.4" r="2.1"/><circle cx="752.1" cy="334.4" r="2.1"/><circle cx="777.5" cy="334.4" r="2.1"/><circle cx="790.2" cy="334.4" r="2.1"/><circle cx="802.9" cy="334.4" r="2.1"/><circle cx="815.6" cy="334.4" r="2.1"/><circle cx="828.3" cy="334.4" r="2.1"/><circle cx="91.7" cy="321.8" r="2.1"/><circle cx="104.4" cy="321.8" r="2.1"/><circle cx="117.1" cy="321.8" r="2.1"/><circle cx="129.8" cy="321.8" r="2.1"/><circle cx="142.5" cy="321.8" r="2.1"/><circle cx="167.9" cy="321.8" r="2.1"/><circle cx="180.6" cy="321.8" r="2.1"/><circle cx="193.3" cy="321.8" r="2.1"/><circle cx="206.0" cy="321.8" r="2.1"/><circle cx="218.7" cy="321.8" r="2.1"/><circle cx="244.1" cy="321.8" r="2.1"/><circle cx="256.8" cy="321.8" r="2.1"/><circle cx="269.5" cy="321.8" r="2.1"/><circle cx="282.2" cy="321.8" r="2.1"/><circle cx="294.9" cy="321.8" r="2.1"/><circle cx="320.3" cy="321.8" r="2.1"/><circle cx="333.0" cy="321.8" r="2.1"/><circle cx="345.7" cy="321.8" r="2.1"/><circle cx="358.4" cy="321.8" r="2.1"/><circle cx="371.1" cy="321.8" r="2.1"/><circle cx="396.5" cy="321.8" r="2.1"/><circle cx="409.2" cy="321.8" r="2.1"/><circle cx="421.9" cy="321.8" r="2.1"/><circle cx="434.6" cy="321.8" r="2.1"/><circle cx="447.3" cy="321.8" r="2.1"/><circle cx="472.7" cy="321.8" r="2.1"/><circle cx="485.4" cy="321.8" r="2.1"/><circle cx="498.1" cy="321.8" r="2.1"/><circle cx="510.8" cy="321.8" r="2.1"/><circle cx="523.5" cy="321.8" r="2.1"/><circle cx="548.9" cy="321.8" r="2.1"/><circle cx="561.6" cy="321.8" r="2.1"/><circle cx="574.3" cy="321.8" r="2.1"/><circle cx="587.0" cy="321.8" r="2.1"/><circle cx="599.7" cy="321.8" r="2.1"/><circle cx="625.1" cy="321.8" r="2.1"/><circle cx="637.8" cy="321.8" r="2.1"/><circle cx="650.5" cy="321.8" r="2.1"/><circle cx="663.2" cy="321.8" r="2.1"/><circle cx="675.9" cy="321.8" r="2.1"/><circle cx="701.3" cy="321.8" r="2.1"/><circle cx="714.0" cy="321.8" r="2.1"/><circle cx="726.7" cy="321.8" r="2.1"/><circle cx="739.4" cy="321.8" r="2.1"/><circle cx="752.1" cy="321.8" r="2.1"/><circle cx="777.5" cy="321.8" r="2.1"/><circle cx="790.2" cy="321.8" r="2.1"/><circle cx="802.9" cy="321.8" r="2.1"/><circle cx="815.6" cy="321.8" r="2.1"/><circle cx="828.3" cy="321.8" r="2.1"/></g>
+<text class="s" x="79.0" y="84" text-anchor="middle">1</text>
+<text class="s" x="129.8" y="84" text-anchor="middle">5</text>
+<text class="s" x="193.3" y="84" text-anchor="middle">10</text>
+<text class="s" x="256.8" y="84" text-anchor="middle">15</text>
+<text class="s" x="320.3" y="84" text-anchor="middle">20</text>
+<text class="s" x="383.8" y="84" text-anchor="middle">25</text>
+<text class="s" x="447.3" y="84" text-anchor="middle">30</text>
+<text class="s" x="510.8" y="84" text-anchor="middle">35</text>
+<text class="s" x="574.3" y="84" text-anchor="middle">40</text>
+<text class="s" x="637.8" y="84" text-anchor="middle">45</text>
+<text class="s" x="701.3" y="84" text-anchor="middle">50</text>
+<text class="s" x="764.8" y="84" text-anchor="middle">55</text>
+<text class="s" x="828.3" y="84" text-anchor="middle">60</text>
+<text class="s" x="866.4" y="84" text-anchor="middle">63</text>
+<text class="s" x="46" y="160.7" text-anchor="middle">a</text>
+<text class="s" x="46" y="173.3" text-anchor="middle">b</text>
+<text class="s" x="46" y="186.1" text-anchor="middle">c</text>
+<text class="s" x="46" y="198.8" text-anchor="middle">d</text>
+<text class="s" x="46" y="211.4" text-anchor="middle">e</text>
+<text class="s" x="46" y="249.6" text-anchor="middle">f</text>
+<text class="s" x="46" y="262.2" text-anchor="middle">g</text>
+<text class="s" x="46" y="274.9" text-anchor="middle">h</text>
+<text class="s" x="46" y="287.6" text-anchor="middle">i</text>
+<text class="s" x="46" y="300.4" text-anchor="middle">j</text>
+<text class="tp" x="893.5" y="122.55">+</text><text class="s" x="893.5" y="135.25">−</text>
+<text class="tp" x="893.5" y="325.75">+</text><text class="s" x="893.5" y="338.45">−</text>
+<rect class="part mic" x="69.5" y="105.8" width="82.6" height="63.5" rx="1.5"/><circle class="port" cx="110.8" cy="133.8" r="4.0"/><circle class="mh" cx="82.2" cy="118.5" r="6.2"/><circle class="mh" cx="139.3" cy="118.5" r="6.2"/><rect class="pin" x="76.0" y="153.7" width="6" height="6"/><rect class="pin" x="88.7" y="153.7" width="6" height="6"/><rect class="pin" x="101.4" y="153.7" width="6" height="6"/><rect class="pin" x="114.1" y="153.7" width="6" height="6"/><rect class="pin" x="126.8" y="153.7" width="6" height="6"/><rect class="pin" x="139.5" y="153.7" width="6" height="6"/><text class="tb" x="110.8" y="97.8" text-anchor="middle">Mic 0</text>
+<rect class="part mic" x="69.5" y="283.7" width="82.6" height="63.5" rx="1.5"/><circle class="port" cx="110.8" cy="319.2" r="4.0"/><circle class="mh" cx="82.2" cy="334.4" r="6.2"/><circle class="mh" cx="139.3" cy="334.4" r="6.2"/><rect class="pin" x="76.0" y="293.4" width="6" height="6"/><rect class="pin" x="88.7" y="293.4" width="6" height="6"/><rect class="pin" x="101.4" y="293.4" width="6" height="6"/><rect class="pin" x="114.1" y="293.4" width="6" height="6"/><rect class="pin" x="126.8" y="293.4" width="6" height="6"/><rect class="pin" x="139.5" y="293.4" width="6" height="6"/><text class="tb" x="110.8" y="365.2" text-anchor="middle">Mic 1</text>
+<rect class="part mic" x="793.4" y="105.8" width="82.5" height="63.5" rx="1.5"/><circle class="port" cx="834.7" cy="133.8" r="4.0"/><circle class="mh" cx="806.1" cy="118.5" r="6.2"/><circle class="mh" cx="863.2" cy="118.5" r="6.2"/><rect class="pin" x="799.9" y="153.7" width="6" height="6"/><rect class="pin" x="812.6" y="153.7" width="6" height="6"/><rect class="pin" x="825.3" y="153.7" width="6" height="6"/><rect class="pin" x="838.0" y="153.7" width="6" height="6"/><rect class="pin" x="850.7" y="153.7" width="6" height="6"/><rect class="pin" x="863.4" y="153.7" width="6" height="6"/><text class="tb" x="834.7" y="97.8" text-anchor="middle">Mic 2</text>
+<rect class="part mic" x="793.4" y="283.7" width="82.5" height="63.5" rx="1.5"/><circle class="port" cx="834.7" cy="319.2" r="4.0"/><circle class="mh" cx="806.1" cy="334.4" r="6.2"/><circle class="mh" cx="863.2" cy="334.4" r="6.2"/><rect class="pin" x="799.9" y="293.4" width="6" height="6"/><rect class="pin" x="812.6" y="293.4" width="6" height="6"/><rect class="pin" x="825.3" y="293.4" width="6" height="6"/><rect class="pin" x="838.0" y="293.4" width="6" height="6"/><rect class="pin" x="850.7" y="293.4" width="6" height="6"/><rect class="pin" x="863.4" y="293.4" width="6" height="6"/><text class="tb" x="834.7" y="365.2" text-anchor="middle">Mic 3</text>
+<rect class="part rfm" x="166.6" y="283.7" width="127.0" height="146.0" rx="1.5"/>
+<rect class="pin" x="177.6" y="293.4" width="6" height="6"/><rect class="pin" x="190.3" y="293.4" width="6" height="6"/><rect class="pin" x="203.0" y="293.4" width="6" height="6"/><rect class="pin" x="215.7" y="293.4" width="6" height="6"/><rect class="pin" x="228.4" y="293.4" width="6" height="6"/><rect class="pin" x="241.1" y="293.4" width="6" height="6"/><rect class="pin" x="253.8" y="293.4" width="6" height="6"/><rect class="pin" x="266.5" y="293.4" width="6" height="6"/><rect class="pin" x="279.2" y="293.4" width="6" height="6"/>
+<circle class="mh" cx="282.2" cy="423.4" r="3"/>
+<circle class="mh" cx="269.5" cy="423.4" r="3"/>
+<circle class="mh" cx="256.8" cy="423.4" r="3"/>
+<circle class="mh" cx="244.1" cy="423.4" r="3"/>
+<circle class="mh" cx="231.4" cy="423.4" r="3"/>
+<circle class="ant" cx="186.9" cy="406.2" r="4"/>
+<text class="tb" x="230.4" y="348.7" text-anchor="middle">RFM95W</text>
+<text class="s" x="230.4" y="364.7" text-anchor="middle">25.4 × 29.2 mm</text>
+<path class="antw" d="M186.9,406.2 H10.0"/>
+<path class="w" d="M6.0,400.2 l8,12 M12.0,400.2 l8,12"/>
+<text class="tl" x="15.0" y="398.2">78 mm wire</text>
+<text class="s" x="256.8" y="441.4" text-anchor="middle">DIO1–5 pads: no header</text>
+<rect class="part esp" x="326.0" y="175.7" width="313.7" height="127.0" rx="3"/>
+<rect class="ant" x="326.0" y="187.1" width="32.5" height="104.3" rx="1"/>
+<rect class="can" x="358.5" y="187.1" width="90.0" height="104.3" rx="1"/>
+<rect class="pin" x="330.0" y="179.1" width="6" height="6"/><rect class="pin" x="342.7" y="179.1" width="6" height="6"/><rect class="pin" x="355.4" y="179.1" width="6" height="6"/><rect class="pin" x="368.1" y="179.1" width="6" height="6"/><rect class="pin" x="380.8" y="179.1" width="6" height="6"/><rect class="pin" x="393.5" y="179.1" width="6" height="6"/><rect class="pin" x="406.2" y="179.1" width="6" height="6"/><rect class="pin" x="418.9" y="179.1" width="6" height="6"/><rect class="pin" x="431.6" y="179.1" width="6" height="6"/><rect class="pin" x="444.3" y="179.1" width="6" height="6"/><rect class="pin" x="457.0" y="179.1" width="6" height="6"/><rect class="pin" x="469.7" y="179.1" width="6" height="6"/><rect class="pin" x="482.4" y="179.1" width="6" height="6"/><rect class="pin" x="495.1" y="179.1" width="6" height="6"/><rect class="pin" x="507.8" y="179.1" width="6" height="6"/><rect class="pin" x="520.5" y="179.1" width="6" height="6"/><rect class="pin" x="533.2" y="179.1" width="6" height="6"/><rect class="pin" x="545.9" y="179.1" width="6" height="6"/><rect class="pin" x="558.6" y="179.1" width="6" height="6"/><rect class="pin" x="571.3" y="179.1" width="6" height="6"/><rect class="pin" x="584.0" y="179.1" width="6" height="6"/><rect class="pin" x="596.7" y="179.1" width="6" height="6"/><rect class="pin off" x="330.0" y="293.4" width="6" height="6"/><rect class="pin off" x="342.7" y="293.4" width="6" height="6"/><rect class="pin off" x="355.4" y="293.4" width="6" height="6"/><rect class="pin off" x="368.1" y="293.4" width="6" height="6"/><rect class="pin off" x="380.8" y="293.4" width="6" height="6"/><rect class="pin off" x="393.5" y="293.4" width="6" height="6"/><rect class="pin off" x="406.2" y="293.4" width="6" height="6"/><rect class="pin off" x="418.9" y="293.4" width="6" height="6"/><rect class="pin off" x="431.6" y="293.4" width="6" height="6"/><rect class="pin off" x="444.3" y="293.4" width="6" height="6"/><rect class="pin off" x="457.0" y="293.4" width="6" height="6"/><rect class="pin off" x="469.7" y="293.4" width="6" height="6"/><rect class="pin off" x="482.4" y="293.4" width="6" height="6"/><rect class="pin off" x="495.1" y="293.4" width="6" height="6"/><rect class="pin off" x="507.8" y="293.4" width="6" height="6"/><rect class="pin off" x="520.5" y="293.4" width="6" height="6"/><rect class="pin off" x="533.2" y="293.4" width="6" height="6"/><rect class="pin off" x="545.9" y="293.4" width="6" height="6"/><rect class="pin off" x="558.6" y="293.4" width="6" height="6"/><rect class="pin off" x="571.3" y="293.4" width="6" height="6"/><rect class="pin off" x="584.0" y="293.4" width="6" height="6"/><rect class="pin off" x="596.7" y="293.4" width="6" height="6"/>
+<rect class="usb" x="603.2" y="184.2" width="41.5" height="45.0" rx="1"/>
+<rect class="usb" x="603.2" y="249.7" width="41.5" height="45.0" rx="1"/>
+<text class="tb" x="490" y="226" text-anchor="middle">ESP32-S3-DevKitC-1</text>
+<text class="s" x="490" y="242" text-anchor="middle">62.74 × 25.40 mm</text>
+<text class="s" x="490" y="258" text-anchor="middle">J1 col c · J3 col j</text>
+<text class="s" x="342.0" y="240.0" text-anchor="middle" transform="rotate(-90 342.0 240.0)">antenna</text>
+<rect class="keep" x="644.7" y="176.7" width="140.0" height="60.0" rx="1"/>
+<text class="tpl" x="714.7" y="210.7" text-anchor="middle">USB-C plug</text>
+<path class="pwr" d="M784.7,206.7 H794.7 V60.0" marker-end="url(#ap)"/>
+<text class="tp" x="804.7" y="50.0">cable → power bank</text>
+<path class="w" d="M60.0,458.0 H885.5" marker-start="url(#af)" marker-end="url(#af)"/>
+<text class="t" x="472.75" y="476.0" text-anchor="middle">breadboard 165.1 mm (6.5 in) × 54.6 mm (2.2 in)</text>
+<path class="net" d="M110.8,133.8 H834.7" stroke-dasharray="3 3"/>
+<text class="tn" x="460.0" y="127.8" text-anchor="middle">port to port 144.8 mm</text>
+<path class="net" d="M110.8,133.8 V319.2" stroke-dasharray="3 3"/>
+<text class="tn" x="116.8" y="230.0">37.1 mm</text>
+<text class="s" x="883.5" y="443.0" text-anchor="end">RFM95W hangs 13.3 mm past board edge</text>
+</svg>
+
+
+
+    <figcaption>Gray holes = free. Dark squares = header pins. Blue ring = mic sound port. Hollow circles = mounting holes / unused pads. Dashed orange = USB-C plug keep-out. Mic and RFM95W bodies sit on their headers about 2.5 mm above the breadboard, over the rails; rail holes under them are not reachable.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>PCB size</th><th>Header</th><th>Placement</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td>ESP32-S3-DevKitC-1</td><td>62.74 × 25.40 mm</td><td>2 × 22 pins, rows 22.86 mm (9 holes) apart</td><td>J1 col c, J3 col j, rows 21–42, USB end toward row 63</td><td>cols c–j rows 21–45; free holes: a, b on J1 side, none on J3 side</td></tr>
+      <tr><td>ICS-43434 breakout (×4)</td><td>16.51 × 12.70 mm</td><td>1 × 6 pins, 2.54 mm from one long edge</td><td>col a or j, body outward over the rails</td><td>6.5 rows; 10.16 mm outward, 2.54 mm inward</td></tr>
+      <tr><td>RFM95W breakout</td><td>25.4 × 29.2 mm</td><td>1 × 9 pins (use), 1 × 5 DIO1–5 (leave empty)</td><td>col j rows 9–17, body outward</td><td>10 rows of j-side rails; 13.3 mm past the board edge</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>PCB size</b>: board outline. <b>Header</b>: pin rows used to plug in. <b>Placement</b>: breadboard column and rows of the header pins. <b>Covers</b>: area under the board that can't be used.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Rows, in order</th></tr></thead>
+    <tbody>
+      <tr><td>Mic 0 / Mic 2 (col a, port up)</td><td>SEL · LRCL (WS) · DOUT · BCLK · GND · 3V (rows 1→6 / 58→63)</td></tr>
+      <tr><td>Mic 1 / Mic 3 (col j, port up)</td><td>3V · GND · BCLK · DOUT · LRCL (WS) · SEL (rows 1→6 / 58→63)</td></tr>
+      <tr><td>RFM95W (col j)</td><td>RST · CS · MOSI · MISO · SCK · G0 · EN · GND · VIN (rows 9→17)</td></tr>
+      <tr><td>ESP32 J1 (col c)</td><td>3V3 · 3V3 · RST · 4 · 5 · 6 · 7 · 15 · 16 · 17 · 18 · 8 · 3 · 46 · 9 · 10 · 11 · 12 · 13 · 14 · 5V · GND (rows 21→42)</td></tr>
+      <tr><td>ESP32 J3 (col j)</td><td>G · TX · RX · 1 · 2 · 42 · 41 · 40 · 39 · 38 · 37 · 36 · 35 · 0 · 45 · 48 · 47 · 21 · 20 · 19 · G · G (rows 21→42, none used)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>Rows, in order</b>: pin label in each breadboard row, top to bottom. Mic pin order assumes the header is soldered so the sound port faces up and the body points outward; the order is mirrored between the a side and the j side. Check against the silkscreen before wiring.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Fit check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Mic sound port</td><td>Bottom-ported: port opening is on the PCB underside. Solder the header from the component side so the port faces up (Adafruit assembly note). Plugged in the other way, the port faces the breadboard.</td></tr>
+      <tr><td>ESP32 J1 in col b (current N1)</td><td>J3 then lands in col i: 1 free hole per row on each side. J1 in col c gives 2 free holes (a, b) on the side with every used GPIO.</td></tr>
+      <tr><td>RFM95W body inward</td><td>Covers cols a–j for 10 rows. Body outward keeps the terminal area free and puts the ANT pad 22 mm out, past the board edge.</td></tr>
+      <tr><td>RFM95W DIO1–5 header</td><td>Sits 25.4 mm from the main header. Not used by firmware. If already soldered: body outward, the 5 pins hang past the breadboard edge with nothing connected; use that radio in the base receiver (table, not wall). Body inward, they plug into col b rows 9–13 and those rows must stay empty.</td></tr>
+      <tr><td>USB-C plug</td><td>Use the port on the J1 side; plug runs between Mic 2 and Mic 3 (22.9 mm gap).</td></tr>
+      <tr><td>Rail access</td><td>Rails blocked under mics (rows 1–7, 57–63) and under the RFM95W (j side, rows 8–18). Use rail holes in rows 19–56.</td></tr>
+      <tr><td>Mic spacing</td><td>Port to port: 144.8 mm along the board, 37.1 mm across, 149.5 mm diagonal.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>LoRa radios (RFM95W ×5)</h2>
+  <p class="def" style="max-width:85ch">One RFM95W per node (4) and one in the base receiver. Same part, same pins, same settings: 915 MHz, SF7, 500 kHz, sync 0x5E. The breakout has no antenna; each needs a 78 mm solid wire soldered to the ANT pad. Outline from Adafruit's board file, 10 px = 1 mm.</p>
+  <figure>
+<svg viewBox="0 0 700 430" role="img" aria-label="RFM95W breakout drawn to scale, 10 pixels per millimetre: 9-pin header along the bottom edge, DIO1 to DIO5 pads along the top edge, ANT pad near the top right corner.">
+<rect class="rfm part" x="42.54" y="40.0" width="254.0" height="292.1" rx="12"/>
+<rect class="can" x="107.32" y="104.78000000000002" width="160" height="160" rx="2"/>
+<text class="s" x="187.32" y="188.78000000000003" text-anchor="middle">RFM95W module 16 × 16</text>
+<rect class="pin" x="60.400000000000006" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="65.4" y="332.70000000000005" text-anchor="middle">VIN</text>
+<text class="s" x="65.4" y="366.70000000000005" text-anchor="middle">1</text>
+<rect class="pin" x="85.8" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="90.8" y="348.70000000000005" text-anchor="middle">GND</text>
+<text class="s" x="90.8" y="366.70000000000005" text-anchor="middle">2</text>
+<rect class="pin" x="111.2" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="116.2" y="332.70000000000005" text-anchor="middle">EN</text>
+<text class="s" x="116.2" y="366.70000000000005" text-anchor="middle">3</text>
+<rect class="pin" x="136.6" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="141.6" y="348.70000000000005" text-anchor="middle">G0</text>
+<text class="s" x="141.6" y="366.70000000000005" text-anchor="middle">4</text>
+<rect class="pin" x="162.0" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="167.0" y="332.70000000000005" text-anchor="middle">SCK</text>
+<text class="s" x="167.0" y="366.70000000000005" text-anchor="middle">5</text>
+<rect class="pin" x="187.39999999999998" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="192.39999999999998" y="348.70000000000005" text-anchor="middle">MISO</text>
+<text class="s" x="192.39999999999998" y="366.70000000000005" text-anchor="middle">6</text>
+<rect class="pin" x="212.8" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="217.8" y="332.70000000000005" text-anchor="middle">MOSI</text>
+<text class="s" x="217.8" y="366.70000000000005" text-anchor="middle">7</text>
+<rect class="pin" x="238.2" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="243.2" y="348.70000000000005" text-anchor="middle">CS</text>
+<text class="s" x="243.2" y="366.70000000000005" text-anchor="middle">8</text>
+<rect class="pin" x="263.6" y="301.70000000000005" width="10" height="10"/>
+<text class="s" x="268.6" y="332.70000000000005" text-anchor="middle">RST</text>
+<text class="s" x="268.6" y="366.70000000000005" text-anchor="middle">9</text>
+<circle class="mh" cx="65.4" cy="52.699999999999996" r="5"/>
+<text class="s" x="65.4" y="42.699999999999996" text-anchor="middle">D1</text>
+<circle class="mh" cx="90.8" cy="52.699999999999996" r="5"/>
+<text class="s" x="90.8" y="42.699999999999996" text-anchor="middle">D2</text>
+<circle class="mh" cx="116.2" cy="52.699999999999996" r="5"/>
+<text class="s" x="116.2" y="42.699999999999996" text-anchor="middle">D3</text>
+<circle class="mh" cx="141.6" cy="52.699999999999996" r="5"/>
+<text class="s" x="141.6" y="42.699999999999996" text-anchor="middle">D4</text>
+<circle class="mh" cx="167.0" cy="52.699999999999996" r="5"/>
+<text class="s" x="167.0" y="42.699999999999996" text-anchor="middle">D5</text>
+<circle class="ant" cx="255.9" cy="86.99000000000001" r="6"/>
+<text class="tl" x="255.9" y="108.99000000000001" text-anchor="middle">ANT</text>
+<rect class="keep" x="235.9" y="38.0" width="40" height="22"/>
+<text class="tpl" x="255.9" y="32.0" text-anchor="middle">uFL / SMA spot</text>
+<path class="antw" d="M255.9,86.99000000000001 V10.0"/>
+<path class="w" d="M42.54,392.1 H296.54" marker-start="url(#af)" marker-end="url(#af)"/>
+<text class="t" x="169.54000000000002" y="410.1" text-anchor="middle">25.4 mm</text>
+<path class="w" d="M316.54,40.0 V332.1" marker-start="url(#af)" marker-end="url(#af)"/>
+<text class="t" x="324.54" y="186.10000000000002">29.21 mm</text>
+<text class="tb" x="416.54" y="60">Pin header (9)</text>
+<text class="s" x="416.54" y="78">pin 1 VIN … pin 9 RST, 2.54 mm pitch</text>
+<text class="s" x="416.54" y="96">2.54 mm from bottom edge</text>
+<text class="tb" x="416.54" y="132">DIO1–5 pads</text>
+<text class="s" x="416.54" y="150">25.4 mm above header row</text>
+<text class="s" x="416.54" y="168">not used by firmware: no header</text>
+<text class="tb" x="416.54" y="204">ANT pad</text>
+<text class="s" x="416.54" y="222">22.0 mm above header row,</text>
+<text class="s" x="416.54" y="240">19.05 mm right of pin 1</text>
+<text class="s" x="416.54" y="258">solder 78 mm solid wire here</text>
+<text class="tb" x="416.54" y="294">Height on breadboard</text>
+<text class="s" x="416.54" y="312">~2.5 mm header spacer + 1.6 mm PCB</text>
+</svg>
+    <figcaption>Component side up, as plugged into the breadboard. Only the 9-pin header plugs in. Blue dot = ANT pad; blue line = antenna wire direction.</figcaption>
+  </figure>
+  <h2 style="margin-top:8px">Base receiver breadboard, to scale</h2>
+  <p class="def" style="max-width:85ch">Same ESP32 and RFM95W positions as a node, no mics. Sits at the C2 table, powered and read over USB from the laptop.</p>
+  <figure>
+<svg viewBox="0 0 1000 490" role="img" aria-label="Full breadboard drawn to scale, 5 pixels per millimetre, with the mic breakouts, RFM95W and ESP32-S3-DevKitC-1 at their real sizes.">
+<text class="s" x="60" y="20">Scale 5 px = 1 mm · left end = top when mounted · row numbers along top</text>
+<rect class="box2" x="60.0" y="90.0" width="825.5" height="273.0" rx="6"/>
+<rect x="67.5" y="218.0" width="810.5" height="17.0" class="chan"/>
+<line class="pwr" x1="70.0" y1="118.55" x2="875.5" y2="118.55" opacity=".35"/>
+<line class="w" x1="70.0" y1="131.25" x2="875.5" y2="131.25" opacity=".35"/>
+<line class="w" x1="70.0" y1="334.45" x2="875.5" y2="334.45" opacity=".35"/>
+<line class="pwr" x1="70.0" y1="321.75" x2="875.5" y2="321.75" opacity=".35"/>
+<g class="hole"><circle cx="79.0" cy="156.7" r="2.1"/><circle cx="79.0" cy="169.3" r="2.1"/><circle cx="79.0" cy="182.1" r="2.1"/><circle cx="79.0" cy="194.8" r="2.1"/><circle cx="79.0" cy="207.4" r="2.1"/><circle cx="79.0" cy="245.6" r="2.1"/><circle cx="79.0" cy="258.2" r="2.1"/><circle cx="79.0" cy="270.9" r="2.1"/><circle cx="79.0" cy="283.6" r="2.1"/><circle cx="79.0" cy="296.4" r="2.1"/><circle cx="91.7" cy="156.7" r="2.1"/><circle cx="91.7" cy="169.3" r="2.1"/><circle cx="91.7" cy="182.1" r="2.1"/><circle cx="91.7" cy="194.8" r="2.1"/><circle cx="91.7" cy="207.4" r="2.1"/><circle cx="91.7" cy="245.6" r="2.1"/><circle cx="91.7" cy="258.2" r="2.1"/><circle cx="91.7" cy="270.9" r="2.1"/><circle cx="91.7" cy="283.6" r="2.1"/><circle cx="91.7" cy="296.4" r="2.1"/><circle cx="104.4" cy="156.7" r="2.1"/><circle cx="104.4" cy="169.3" r="2.1"/><circle cx="104.4" cy="182.1" r="2.1"/><circle cx="104.4" cy="194.8" r="2.1"/><circle cx="104.4" cy="207.4" r="2.1"/><circle cx="104.4" cy="245.6" r="2.1"/><circle cx="104.4" cy="258.2" r="2.1"/><circle cx="104.4" cy="270.9" r="2.1"/><circle cx="104.4" cy="283.6" r="2.1"/><circle cx="104.4" cy="296.4" r="2.1"/><circle cx="117.1" cy="156.7" r="2.1"/><circle cx="117.1" cy="169.3" r="2.1"/><circle cx="117.1" cy="182.1" r="2.1"/><circle cx="117.1" cy="194.8" r="2.1"/><circle cx="117.1" cy="207.4" r="2.1"/><circle cx="117.1" cy="245.6" r="2.1"/><circle cx="117.1" cy="258.2" r="2.1"/><circle cx="117.1" cy="270.9" r="2.1"/><circle cx="117.1" cy="283.6" r="2.1"/><circle cx="117.1" cy="296.4" r="2.1"/><circle cx="129.8" cy="156.7" r="2.1"/><circle cx="129.8" cy="169.3" r="2.1"/><circle cx="129.8" cy="182.1" r="2.1"/><circle cx="129.8" cy="194.8" r="2.1"/><circle cx="129.8" cy="207.4" r="2.1"/><circle cx="129.8" cy="245.6" r="2.1"/><circle cx="129.8" cy="258.2" r="2.1"/><circle cx="129.8" cy="270.9" r="2.1"/><circle cx="129.8" cy="283.6" r="2.1"/><circle cx="129.8" cy="296.4" r="2.1"/><circle cx="142.5" cy="156.7" r="2.1"/><circle cx="142.5" cy="169.3" r="2.1"/><circle cx="142.5" cy="182.1" r="2.1"/><circle cx="142.5" cy="194.8" r="2.1"/><circle cx="142.5" cy="207.4" r="2.1"/><circle cx="142.5" cy="245.6" r="2.1"/><circle cx="142.5" cy="258.2" r="2.1"/><circle cx="142.5" cy="270.9" r="2.1"/><circle cx="142.5" cy="283.6" r="2.1"/><circle cx="142.5" cy="296.4" r="2.1"/><circle cx="155.2" cy="156.7" r="2.1"/><circle cx="155.2" cy="169.3" r="2.1"/><circle cx="155.2" cy="182.1" r="2.1"/><circle cx="155.2" cy="194.8" r="2.1"/><circle cx="155.2" cy="207.4" r="2.1"/><circle cx="155.2" cy="245.6" r="2.1"/><circle cx="155.2" cy="258.2" r="2.1"/><circle cx="155.2" cy="270.9" r="2.1"/><circle cx="155.2" cy="283.6" r="2.1"/><circle cx="155.2" cy="296.4" r="2.1"/><circle cx="167.9" cy="156.7" r="2.1"/><circle cx="167.9" cy="169.3" r="2.1"/><circle cx="167.9" cy="182.1" r="2.1"/><circle cx="167.9" cy="194.8" r="2.1"/><circle cx="167.9" cy="207.4" r="2.1"/><circle cx="167.9" cy="245.6" r="2.1"/><circle cx="167.9" cy="258.2" r="2.1"/><circle cx="167.9" cy="270.9" r="2.1"/><circle cx="167.9" cy="283.6" r="2.1"/><circle cx="167.9" cy="296.4" r="2.1"/><circle cx="180.6" cy="156.7" r="2.1"/><circle cx="180.6" cy="169.3" r="2.1"/><circle cx="180.6" cy="182.1" r="2.1"/><circle cx="180.6" cy="194.8" r="2.1"/><circle cx="180.6" cy="207.4" r="2.1"/><circle cx="180.6" cy="245.6" r="2.1"/><circle cx="180.6" cy="258.2" r="2.1"/><circle cx="180.6" cy="270.9" r="2.1"/><circle cx="180.6" cy="283.6" r="2.1"/><circle cx="180.6" cy="296.4" r="2.1"/><circle cx="193.3" cy="156.7" r="2.1"/><circle cx="193.3" cy="169.3" r="2.1"/><circle cx="193.3" cy="182.1" r="2.1"/><circle cx="193.3" cy="194.8" r="2.1"/><circle cx="193.3" cy="207.4" r="2.1"/><circle cx="193.3" cy="245.6" r="2.1"/><circle cx="193.3" cy="258.2" r="2.1"/><circle cx="193.3" cy="270.9" r="2.1"/><circle cx="193.3" cy="283.6" r="2.1"/><circle cx="193.3" cy="296.4" r="2.1"/><circle cx="206.0" cy="156.7" r="2.1"/><circle cx="206.0" cy="169.3" r="2.1"/><circle cx="206.0" cy="182.1" r="2.1"/><circle cx="206.0" cy="194.8" r="2.1"/><circle cx="206.0" cy="207.4" r="2.1"/><circle cx="206.0" cy="245.6" r="2.1"/><circle cx="206.0" cy="258.2" r="2.1"/><circle cx="206.0" cy="270.9" r="2.1"/><circle cx="206.0" cy="283.6" r="2.1"/><circle cx="206.0" cy="296.4" r="2.1"/><circle cx="218.7" cy="156.7" r="2.1"/><circle cx="218.7" cy="169.3" r="2.1"/><circle cx="218.7" cy="182.1" r="2.1"/><circle cx="218.7" cy="194.8" r="2.1"/><circle cx="218.7" cy="207.4" r="2.1"/><circle cx="218.7" cy="245.6" r="2.1"/><circle cx="218.7" cy="258.2" r="2.1"/><circle cx="218.7" cy="270.9" r="2.1"/><circle cx="218.7" cy="283.6" r="2.1"/><circle cx="218.7" cy="296.4" r="2.1"/><circle cx="231.4" cy="156.7" r="2.1"/><circle cx="231.4" cy="169.3" r="2.1"/><circle cx="231.4" cy="182.1" r="2.1"/><circle cx="231.4" cy="194.8" r="2.1"/><circle cx="231.4" cy="207.4" r="2.1"/><circle cx="231.4" cy="245.6" r="2.1"/><circle cx="231.4" cy="258.2" r="2.1"/><circle cx="231.4" cy="270.9" r="2.1"/><circle cx="231.4" cy="283.6" r="2.1"/><circle cx="231.4" cy="296.4" r="2.1"/><circle cx="244.1" cy="156.7" r="2.1"/><circle cx="244.1" cy="169.3" r="2.1"/><circle cx="244.1" cy="182.1" r="2.1"/><circle cx="244.1" cy="194.8" r="2.1"/><circle cx="244.1" cy="207.4" r="2.1"/><circle cx="244.1" cy="245.6" r="2.1"/><circle cx="244.1" cy="258.2" r="2.1"/><circle cx="244.1" cy="270.9" r="2.1"/><circle cx="244.1" cy="283.6" r="2.1"/><circle cx="244.1" cy="296.4" r="2.1"/><circle cx="256.8" cy="156.7" r="2.1"/><circle cx="256.8" cy="169.3" r="2.1"/><circle cx="256.8" cy="182.1" r="2.1"/><circle cx="256.8" cy="194.8" r="2.1"/><circle cx="256.8" cy="207.4" r="2.1"/><circle cx="256.8" cy="245.6" r="2.1"/><circle cx="256.8" cy="258.2" r="2.1"/><circle cx="256.8" cy="270.9" r="2.1"/><circle cx="256.8" cy="283.6" r="2.1"/><circle cx="256.8" cy="296.4" r="2.1"/><circle cx="269.5" cy="156.7" r="2.1"/><circle cx="269.5" cy="169.3" r="2.1"/><circle cx="269.5" cy="182.1" r="2.1"/><circle cx="269.5" cy="194.8" r="2.1"/><circle cx="269.5" cy="207.4" r="2.1"/><circle cx="269.5" cy="245.6" r="2.1"/><circle cx="269.5" cy="258.2" r="2.1"/><circle cx="269.5" cy="270.9" r="2.1"/><circle cx="269.5" cy="283.6" r="2.1"/><circle cx="269.5" cy="296.4" r="2.1"/><circle cx="282.2" cy="156.7" r="2.1"/><circle cx="282.2" cy="169.3" r="2.1"/><circle cx="282.2" cy="182.1" r="2.1"/><circle cx="282.2" cy="194.8" r="2.1"/><circle cx="282.2" cy="207.4" r="2.1"/><circle cx="282.2" cy="245.6" r="2.1"/><circle cx="282.2" cy="258.2" r="2.1"/><circle cx="282.2" cy="270.9" r="2.1"/><circle cx="282.2" cy="283.6" r="2.1"/><circle cx="282.2" cy="296.4" r="2.1"/><circle cx="294.9" cy="156.7" r="2.1"/><circle cx="294.9" cy="169.3" r="2.1"/><circle cx="294.9" cy="182.1" r="2.1"/><circle cx="294.9" cy="194.8" r="2.1"/><circle cx="294.9" cy="207.4" r="2.1"/><circle cx="294.9" cy="245.6" r="2.1"/><circle cx="294.9" cy="258.2" r="2.1"/><circle cx="294.9" cy="270.9" r="2.1"/><circle cx="294.9" cy="283.6" r="2.1"/><circle cx="294.9" cy="296.4" r="2.1"/><circle cx="307.6" cy="156.7" r="2.1"/><circle cx="307.6" cy="169.3" r="2.1"/><circle cx="307.6" cy="182.1" r="2.1"/><circle cx="307.6" cy="194.8" r="2.1"/><circle cx="307.6" cy="207.4" r="2.1"/><circle cx="307.6" cy="245.6" r="2.1"/><circle cx="307.6" cy="258.2" r="2.1"/><circle cx="307.6" cy="270.9" r="2.1"/><circle cx="307.6" cy="283.6" r="2.1"/><circle cx="307.6" cy="296.4" r="2.1"/><circle cx="320.3" cy="156.7" r="2.1"/><circle cx="320.3" cy="169.3" r="2.1"/><circle cx="320.3" cy="182.1" r="2.1"/><circle cx="320.3" cy="194.8" r="2.1"/><circle cx="320.3" cy="207.4" r="2.1"/><circle cx="320.3" cy="245.6" r="2.1"/><circle cx="320.3" cy="258.2" r="2.1"/><circle cx="320.3" cy="270.9" r="2.1"/><circle cx="320.3" cy="283.6" r="2.1"/><circle cx="320.3" cy="296.4" r="2.1"/><circle cx="333.0" cy="156.7" r="2.1"/><circle cx="333.0" cy="169.3" r="2.1"/><circle cx="333.0" cy="182.1" r="2.1"/><circle cx="333.0" cy="194.8" r="2.1"/><circle cx="333.0" cy="207.4" r="2.1"/><circle cx="333.0" cy="245.6" r="2.1"/><circle cx="333.0" cy="258.2" r="2.1"/><circle cx="333.0" cy="270.9" r="2.1"/><circle cx="333.0" cy="283.6" r="2.1"/><circle cx="333.0" cy="296.4" r="2.1"/><circle cx="345.7" cy="156.7" r="2.1"/><circle cx="345.7" cy="169.3" r="2.1"/><circle cx="345.7" cy="182.1" r="2.1"/><circle cx="345.7" cy="194.8" r="2.1"/><circle cx="345.7" cy="207.4" r="2.1"/><circle cx="345.7" cy="245.6" r="2.1"/><circle cx="345.7" cy="258.2" r="2.1"/><circle cx="345.7" cy="270.9" r="2.1"/><circle cx="345.7" cy="283.6" r="2.1"/><circle cx="345.7" cy="296.4" r="2.1"/><circle cx="358.4" cy="156.7" r="2.1"/><circle cx="358.4" cy="169.3" r="2.1"/><circle cx="358.4" cy="182.1" r="2.1"/><circle cx="358.4" cy="194.8" r="2.1"/><circle cx="358.4" cy="207.4" r="2.1"/><circle cx="358.4" cy="245.6" r="2.1"/><circle cx="358.4" cy="258.2" r="2.1"/><circle cx="358.4" cy="270.9" r="2.1"/><circle cx="358.4" cy="283.6" r="2.1"/><circle cx="358.4" cy="296.4" r="2.1"/><circle cx="371.1" cy="156.7" r="2.1"/><circle cx="371.1" cy="169.3" r="2.1"/><circle cx="371.1" cy="182.1" r="2.1"/><circle cx="371.1" cy="194.8" r="2.1"/><circle cx="371.1" cy="207.4" r="2.1"/><circle cx="371.1" cy="245.6" r="2.1"/><circle cx="371.1" cy="258.2" r="2.1"/><circle cx="371.1" cy="270.9" r="2.1"/><circle cx="371.1" cy="283.6" r="2.1"/><circle cx="371.1" cy="296.4" r="2.1"/><circle cx="383.8" cy="156.7" r="2.1"/><circle cx="383.8" cy="169.3" r="2.1"/><circle cx="383.8" cy="182.1" r="2.1"/><circle cx="383.8" cy="194.8" r="2.1"/><circle cx="383.8" cy="207.4" r="2.1"/><circle cx="383.8" cy="245.6" r="2.1"/><circle cx="383.8" cy="258.2" r="2.1"/><circle cx="383.8" cy="270.9" r="2.1"/><circle cx="383.8" cy="283.6" r="2.1"/><circle cx="383.8" cy="296.4" r="2.1"/><circle cx="396.5" cy="156.7" r="2.1"/><circle cx="396.5" cy="169.3" r="2.1"/><circle cx="396.5" cy="182.1" r="2.1"/><circle cx="396.5" cy="194.8" r="2.1"/><circle cx="396.5" cy="207.4" r="2.1"/><circle cx="396.5" cy="245.6" r="2.1"/><circle cx="396.5" cy="258.2" r="2.1"/><circle cx="396.5" cy="270.9" r="2.1"/><circle cx="396.5" cy="283.6" r="2.1"/><circle cx="396.5" cy="296.4" r="2.1"/><circle cx="409.2" cy="156.7" r="2.1"/><circle cx="409.2" cy="169.3" r="2.1"/><circle cx="409.2" cy="182.1" r="2.1"/><circle cx="409.2" cy="194.8" r="2.1"/><circle cx="409.2" cy="207.4" r="2.1"/><circle cx="409.2" cy="245.6" r="2.1"/><circle cx="409.2" cy="258.2" r="2.1"/><circle cx="409.2" cy="270.9" r="2.1"/><circle cx="409.2" cy="283.6" r="2.1"/><circle cx="409.2" cy="296.4" r="2.1"/><circle cx="421.9" cy="156.7" r="2.1"/><circle cx="421.9" cy="169.3" r="2.1"/><circle cx="421.9" cy="182.1" r="2.1"/><circle cx="421.9" cy="194.8" r="2.1"/><circle cx="421.9" cy="207.4" r="2.1"/><circle cx="421.9" cy="245.6" r="2.1"/><circle cx="421.9" cy="258.2" r="2.1"/><circle cx="421.9" cy="270.9" r="2.1"/><circle cx="421.9" cy="283.6" r="2.1"/><circle cx="421.9" cy="296.4" r="2.1"/><circle cx="434.6" cy="156.7" r="2.1"/><circle cx="434.6" cy="169.3" r="2.1"/><circle cx="434.6" cy="182.1" r="2.1"/><circle cx="434.6" cy="194.8" r="2.1"/><circle cx="434.6" cy="207.4" r="2.1"/><circle cx="434.6" cy="245.6" r="2.1"/><circle cx="434.6" cy="258.2" r="2.1"/><circle cx="434.6" cy="270.9" r="2.1"/><circle cx="434.6" cy="283.6" r="2.1"/><circle cx="434.6" cy="296.4" r="2.1"/><circle cx="447.3" cy="156.7" r="2.1"/><circle cx="447.3" cy="169.3" r="2.1"/><circle cx="447.3" cy="182.1" r="2.1"/><circle cx="447.3" cy="194.8" r="2.1"/><circle cx="447.3" cy="207.4" r="2.1"/><circle cx="447.3" cy="245.6" r="2.1"/><circle cx="447.3" cy="258.2" r="2.1"/><circle cx="447.3" cy="270.9" r="2.1"/><circle cx="447.3" cy="283.6" r="2.1"/><circle cx="447.3" cy="296.4" r="2.1"/><circle cx="460.0" cy="156.7" r="2.1"/><circle cx="460.0" cy="169.3" r="2.1"/><circle cx="460.0" cy="182.1" r="2.1"/><circle cx="460.0" cy="194.8" r="2.1"/><circle cx="460.0" cy="207.4" r="2.1"/><circle cx="460.0" cy="245.6" r="2.1"/><circle cx="460.0" cy="258.2" r="2.1"/><circle cx="460.0" cy="270.9" r="2.1"/><circle cx="460.0" cy="283.6" r="2.1"/><circle cx="460.0" cy="296.4" r="2.1"/><circle cx="472.7" cy="156.7" r="2.1"/><circle cx="472.7" cy="169.3" r="2.1"/><circle cx="472.7" cy="182.1" r="2.1"/><circle cx="472.7" cy="194.8" r="2.1"/><circle cx="472.7" cy="207.4" r="2.1"/><circle cx="472.7" cy="245.6" r="2.1"/><circle cx="472.7" cy="258.2" r="2.1"/><circle cx="472.7" cy="270.9" r="2.1"/><circle cx="472.7" cy="283.6" r="2.1"/><circle cx="472.7" cy="296.4" r="2.1"/><circle cx="485.4" cy="156.7" r="2.1"/><circle cx="485.4" cy="169.3" r="2.1"/><circle cx="485.4" cy="182.1" r="2.1"/><circle cx="485.4" cy="194.8" r="2.1"/><circle cx="485.4" cy="207.4" r="2.1"/><circle cx="485.4" cy="245.6" r="2.1"/><circle cx="485.4" cy="258.2" r="2.1"/><circle cx="485.4" cy="270.9" r="2.1"/><circle cx="485.4" cy="283.6" r="2.1"/><circle cx="485.4" cy="296.4" r="2.1"/><circle cx="498.1" cy="156.7" r="2.1"/><circle cx="498.1" cy="169.3" r="2.1"/><circle cx="498.1" cy="182.1" r="2.1"/><circle cx="498.1" cy="194.8" r="2.1"/><circle cx="498.1" cy="207.4" r="2.1"/><circle cx="498.1" cy="245.6" r="2.1"/><circle cx="498.1" cy="258.2" r="2.1"/><circle cx="498.1" cy="270.9" r="2.1"/><circle cx="498.1" cy="283.6" r="2.1"/><circle cx="498.1" cy="296.4" r="2.1"/><circle cx="510.8" cy="156.7" r="2.1"/><circle cx="510.8" cy="169.3" r="2.1"/><circle cx="510.8" cy="182.1" r="2.1"/><circle cx="510.8" cy="194.8" r="2.1"/><circle cx="510.8" cy="207.4" r="2.1"/><circle cx="510.8" cy="245.6" r="2.1"/><circle cx="510.8" cy="258.2" r="2.1"/><circle cx="510.8" cy="270.9" r="2.1"/><circle cx="510.8" cy="283.6" r="2.1"/><circle cx="510.8" cy="296.4" r="2.1"/><circle cx="523.5" cy="156.7" r="2.1"/><circle cx="523.5" cy="169.3" r="2.1"/><circle cx="523.5" cy="182.1" r="2.1"/><circle cx="523.5" cy="194.8" r="2.1"/><circle cx="523.5" cy="207.4" r="2.1"/><circle cx="523.5" cy="245.6" r="2.1"/><circle cx="523.5" cy="258.2" r="2.1"/><circle cx="523.5" cy="270.9" r="2.1"/><circle cx="523.5" cy="283.6" r="2.1"/><circle cx="523.5" cy="296.4" r="2.1"/><circle cx="536.2" cy="156.7" r="2.1"/><circle cx="536.2" cy="169.3" r="2.1"/><circle cx="536.2" cy="182.1" r="2.1"/><circle cx="536.2" cy="194.8" r="2.1"/><circle cx="536.2" cy="207.4" r="2.1"/><circle cx="536.2" cy="245.6" r="2.1"/><circle cx="536.2" cy="258.2" r="2.1"/><circle cx="536.2" cy="270.9" r="2.1"/><circle cx="536.2" cy="283.6" r="2.1"/><circle cx="536.2" cy="296.4" r="2.1"/><circle cx="548.9" cy="156.7" r="2.1"/><circle cx="548.9" cy="169.3" r="2.1"/><circle cx="548.9" cy="182.1" r="2.1"/><circle cx="548.9" cy="194.8" r="2.1"/><circle cx="548.9" cy="207.4" r="2.1"/><circle cx="548.9" cy="245.6" r="2.1"/><circle cx="548.9" cy="258.2" r="2.1"/><circle cx="548.9" cy="270.9" r="2.1"/><circle cx="548.9" cy="283.6" r="2.1"/><circle cx="548.9" cy="296.4" r="2.1"/><circle cx="561.6" cy="156.7" r="2.1"/><circle cx="561.6" cy="169.3" r="2.1"/><circle cx="561.6" cy="182.1" r="2.1"/><circle cx="561.6" cy="194.8" r="2.1"/><circle cx="561.6" cy="207.4" r="2.1"/><circle cx="561.6" cy="245.6" r="2.1"/><circle cx="561.6" cy="258.2" r="2.1"/><circle cx="561.6" cy="270.9" r="2.1"/><circle cx="561.6" cy="283.6" r="2.1"/><circle cx="561.6" cy="296.4" r="2.1"/><circle cx="574.3" cy="156.7" r="2.1"/><circle cx="574.3" cy="169.3" r="2.1"/><circle cx="574.3" cy="182.1" r="2.1"/><circle cx="574.3" cy="194.8" r="2.1"/><circle cx="574.3" cy="207.4" r="2.1"/><circle cx="574.3" cy="245.6" r="2.1"/><circle cx="574.3" cy="258.2" r="2.1"/><circle cx="574.3" cy="270.9" r="2.1"/><circle cx="574.3" cy="283.6" r="2.1"/><circle cx="574.3" cy="296.4" r="2.1"/><circle cx="587.0" cy="156.7" r="2.1"/><circle cx="587.0" cy="169.3" r="2.1"/><circle cx="587.0" cy="182.1" r="2.1"/><circle cx="587.0" cy="194.8" r="2.1"/><circle cx="587.0" cy="207.4" r="2.1"/><circle cx="587.0" cy="245.6" r="2.1"/><circle cx="587.0" cy="258.2" r="2.1"/><circle cx="587.0" cy="270.9" r="2.1"/><circle cx="587.0" cy="283.6" r="2.1"/><circle cx="587.0" cy="296.4" r="2.1"/><circle cx="599.7" cy="156.7" r="2.1"/><circle cx="599.7" cy="169.3" r="2.1"/><circle cx="599.7" cy="182.1" r="2.1"/><circle cx="599.7" cy="194.8" r="2.1"/><circle cx="599.7" cy="207.4" r="2.1"/><circle cx="599.7" cy="245.6" r="2.1"/><circle cx="599.7" cy="258.2" r="2.1"/><circle cx="599.7" cy="270.9" r="2.1"/><circle cx="599.7" cy="283.6" r="2.1"/><circle cx="599.7" cy="296.4" r="2.1"/><circle cx="612.4" cy="156.7" r="2.1"/><circle cx="612.4" cy="169.3" r="2.1"/><circle cx="612.4" cy="182.1" r="2.1"/><circle cx="612.4" cy="194.8" r="2.1"/><circle cx="612.4" cy="207.4" r="2.1"/><circle cx="612.4" cy="245.6" r="2.1"/><circle cx="612.4" cy="258.2" r="2.1"/><circle cx="612.4" cy="270.9" r="2.1"/><circle cx="612.4" cy="283.6" r="2.1"/><circle cx="612.4" cy="296.4" r="2.1"/><circle cx="625.1" cy="156.7" r="2.1"/><circle cx="625.1" cy="169.3" r="2.1"/><circle cx="625.1" cy="182.1" r="2.1"/><circle cx="625.1" cy="194.8" r="2.1"/><circle cx="625.1" cy="207.4" r="2.1"/><circle cx="625.1" cy="245.6" r="2.1"/><circle cx="625.1" cy="258.2" r="2.1"/><circle cx="625.1" cy="270.9" r="2.1"/><circle cx="625.1" cy="283.6" r="2.1"/><circle cx="625.1" cy="296.4" r="2.1"/><circle cx="637.8" cy="156.7" r="2.1"/><circle cx="637.8" cy="169.3" r="2.1"/><circle cx="637.8" cy="182.1" r="2.1"/><circle cx="637.8" cy="194.8" r="2.1"/><circle cx="637.8" cy="207.4" r="2.1"/><circle cx="637.8" cy="245.6" r="2.1"/><circle cx="637.8" cy="258.2" r="2.1"/><circle cx="637.8" cy="270.9" r="2.1"/><circle cx="637.8" cy="283.6" r="2.1"/><circle cx="637.8" cy="296.4" r="2.1"/><circle cx="650.5" cy="156.7" r="2.1"/><circle cx="650.5" cy="169.3" r="2.1"/><circle cx="650.5" cy="182.1" r="2.1"/><circle cx="650.5" cy="194.8" r="2.1"/><circle cx="650.5" cy="207.4" r="2.1"/><circle cx="650.5" cy="245.6" r="2.1"/><circle cx="650.5" cy="258.2" r="2.1"/><circle cx="650.5" cy="270.9" r="2.1"/><circle cx="650.5" cy="283.6" r="2.1"/><circle cx="650.5" cy="296.4" r="2.1"/><circle cx="663.2" cy="156.7" r="2.1"/><circle cx="663.2" cy="169.3" r="2.1"/><circle cx="663.2" cy="182.1" r="2.1"/><circle cx="663.2" cy="194.8" r="2.1"/><circle cx="663.2" cy="207.4" r="2.1"/><circle cx="663.2" cy="245.6" r="2.1"/><circle cx="663.2" cy="258.2" r="2.1"/><circle cx="663.2" cy="270.9" r="2.1"/><circle cx="663.2" cy="283.6" r="2.1"/><circle cx="663.2" cy="296.4" r="2.1"/><circle cx="675.9" cy="156.7" r="2.1"/><circle cx="675.9" cy="169.3" r="2.1"/><circle cx="675.9" cy="182.1" r="2.1"/><circle cx="675.9" cy="194.8" r="2.1"/><circle cx="675.9" cy="207.4" r="2.1"/><circle cx="675.9" cy="245.6" r="2.1"/><circle cx="675.9" cy="258.2" r="2.1"/><circle cx="675.9" cy="270.9" r="2.1"/><circle cx="675.9" cy="283.6" r="2.1"/><circle cx="675.9" cy="296.4" r="2.1"/><circle cx="688.6" cy="156.7" r="2.1"/><circle cx="688.6" cy="169.3" r="2.1"/><circle cx="688.6" cy="182.1" r="2.1"/><circle cx="688.6" cy="194.8" r="2.1"/><circle cx="688.6" cy="207.4" r="2.1"/><circle cx="688.6" cy="245.6" r="2.1"/><circle cx="688.6" cy="258.2" r="2.1"/><circle cx="688.6" cy="270.9" r="2.1"/><circle cx="688.6" cy="283.6" r="2.1"/><circle cx="688.6" cy="296.4" r="2.1"/><circle cx="701.3" cy="156.7" r="2.1"/><circle cx="701.3" cy="169.3" r="2.1"/><circle cx="701.3" cy="182.1" r="2.1"/><circle cx="701.3" cy="194.8" r="2.1"/><circle cx="701.3" cy="207.4" r="2.1"/><circle cx="701.3" cy="245.6" r="2.1"/><circle cx="701.3" cy="258.2" r="2.1"/><circle cx="701.3" cy="270.9" r="2.1"/><circle cx="701.3" cy="283.6" r="2.1"/><circle cx="701.3" cy="296.4" r="2.1"/><circle cx="714.0" cy="156.7" r="2.1"/><circle cx="714.0" cy="169.3" r="2.1"/><circle cx="714.0" cy="182.1" r="2.1"/><circle cx="714.0" cy="194.8" r="2.1"/><circle cx="714.0" cy="207.4" r="2.1"/><circle cx="714.0" cy="245.6" r="2.1"/><circle cx="714.0" cy="258.2" r="2.1"/><circle cx="714.0" cy="270.9" r="2.1"/><circle cx="714.0" cy="283.6" r="2.1"/><circle cx="714.0" cy="296.4" r="2.1"/><circle cx="726.7" cy="156.7" r="2.1"/><circle cx="726.7" cy="169.3" r="2.1"/><circle cx="726.7" cy="182.1" r="2.1"/><circle cx="726.7" cy="194.8" r="2.1"/><circle cx="726.7" cy="207.4" r="2.1"/><circle cx="726.7" cy="245.6" r="2.1"/><circle cx="726.7" cy="258.2" r="2.1"/><circle cx="726.7" cy="270.9" r="2.1"/><circle cx="726.7" cy="283.6" r="2.1"/><circle cx="726.7" cy="296.4" r="2.1"/><circle cx="739.4" cy="156.7" r="2.1"/><circle cx="739.4" cy="169.3" r="2.1"/><circle cx="739.4" cy="182.1" r="2.1"/><circle cx="739.4" cy="194.8" r="2.1"/><circle cx="739.4" cy="207.4" r="2.1"/><circle cx="739.4" cy="245.6" r="2.1"/><circle cx="739.4" cy="258.2" r="2.1"/><circle cx="739.4" cy="270.9" r="2.1"/><circle cx="739.4" cy="283.6" r="2.1"/><circle cx="739.4" cy="296.4" r="2.1"/><circle cx="752.1" cy="156.7" r="2.1"/><circle cx="752.1" cy="169.3" r="2.1"/><circle cx="752.1" cy="182.1" r="2.1"/><circle cx="752.1" cy="194.8" r="2.1"/><circle cx="752.1" cy="207.4" r="2.1"/><circle cx="752.1" cy="245.6" r="2.1"/><circle cx="752.1" cy="258.2" r="2.1"/><circle cx="752.1" cy="270.9" r="2.1"/><circle cx="752.1" cy="283.6" r="2.1"/><circle cx="752.1" cy="296.4" r="2.1"/><circle cx="764.8" cy="156.7" r="2.1"/><circle cx="764.8" cy="169.3" r="2.1"/><circle cx="764.8" cy="182.1" r="2.1"/><circle cx="764.8" cy="194.8" r="2.1"/><circle cx="764.8" cy="207.4" r="2.1"/><circle cx="764.8" cy="245.6" r="2.1"/><circle cx="764.8" cy="258.2" r="2.1"/><circle cx="764.8" cy="270.9" r="2.1"/><circle cx="764.8" cy="283.6" r="2.1"/><circle cx="764.8" cy="296.4" r="2.1"/><circle cx="777.5" cy="156.7" r="2.1"/><circle cx="777.5" cy="169.3" r="2.1"/><circle cx="777.5" cy="182.1" r="2.1"/><circle cx="777.5" cy="194.8" r="2.1"/><circle cx="777.5" cy="207.4" r="2.1"/><circle cx="777.5" cy="245.6" r="2.1"/><circle cx="777.5" cy="258.2" r="2.1"/><circle cx="777.5" cy="270.9" r="2.1"/><circle cx="777.5" cy="283.6" r="2.1"/><circle cx="777.5" cy="296.4" r="2.1"/><circle cx="790.2" cy="156.7" r="2.1"/><circle cx="790.2" cy="169.3" r="2.1"/><circle cx="790.2" cy="182.1" r="2.1"/><circle cx="790.2" cy="194.8" r="2.1"/><circle cx="790.2" cy="207.4" r="2.1"/><circle cx="790.2" cy="245.6" r="2.1"/><circle cx="790.2" cy="258.2" r="2.1"/><circle cx="790.2" cy="270.9" r="2.1"/><circle cx="790.2" cy="283.6" r="2.1"/><circle cx="790.2" cy="296.4" r="2.1"/><circle cx="802.9" cy="156.7" r="2.1"/><circle cx="802.9" cy="169.3" r="2.1"/><circle cx="802.9" cy="182.1" r="2.1"/><circle cx="802.9" cy="194.8" r="2.1"/><circle cx="802.9" cy="207.4" r="2.1"/><circle cx="802.9" cy="245.6" r="2.1"/><circle cx="802.9" cy="258.2" r="2.1"/><circle cx="802.9" cy="270.9" r="2.1"/><circle cx="802.9" cy="283.6" r="2.1"/><circle cx="802.9" cy="296.4" r="2.1"/><circle cx="815.6" cy="156.7" r="2.1"/><circle cx="815.6" cy="169.3" r="2.1"/><circle cx="815.6" cy="182.1" r="2.1"/><circle cx="815.6" cy="194.8" r="2.1"/><circle cx="815.6" cy="207.4" r="2.1"/><circle cx="815.6" cy="245.6" r="2.1"/><circle cx="815.6" cy="258.2" r="2.1"/><circle cx="815.6" cy="270.9" r="2.1"/><circle cx="815.6" cy="283.6" r="2.1"/><circle cx="815.6" cy="296.4" r="2.1"/><circle cx="828.3" cy="156.7" r="2.1"/><circle cx="828.3" cy="169.3" r="2.1"/><circle cx="828.3" cy="182.1" r="2.1"/><circle cx="828.3" cy="194.8" r="2.1"/><circle cx="828.3" cy="207.4" r="2.1"/><circle cx="828.3" cy="245.6" r="2.1"/><circle cx="828.3" cy="258.2" r="2.1"/><circle cx="828.3" cy="270.9" r="2.1"/><circle cx="828.3" cy="283.6" r="2.1"/><circle cx="828.3" cy="296.4" r="2.1"/><circle cx="841.0" cy="156.7" r="2.1"/><circle cx="841.0" cy="169.3" r="2.1"/><circle cx="841.0" cy="182.1" r="2.1"/><circle cx="841.0" cy="194.8" r="2.1"/><circle cx="841.0" cy="207.4" r="2.1"/><circle cx="841.0" cy="245.6" r="2.1"/><circle cx="841.0" cy="258.2" r="2.1"/><circle cx="841.0" cy="270.9" r="2.1"/><circle cx="841.0" cy="283.6" r="2.1"/><circle cx="841.0" cy="296.4" r="2.1"/><circle cx="853.7" cy="156.7" r="2.1"/><circle cx="853.7" cy="169.3" r="2.1"/><circle cx="853.7" cy="182.1" r="2.1"/><circle cx="853.7" cy="194.8" r="2.1"/><circle cx="853.7" cy="207.4" r="2.1"/><circle cx="853.7" cy="245.6" r="2.1"/><circle cx="853.7" cy="258.2" r="2.1"/><circle cx="853.7" cy="270.9" r="2.1"/><circle cx="853.7" cy="283.6" r="2.1"/><circle cx="853.7" cy="296.4" r="2.1"/><circle cx="866.4" cy="156.7" r="2.1"/><circle cx="866.4" cy="169.3" r="2.1"/><circle cx="866.4" cy="182.1" r="2.1"/><circle cx="866.4" cy="194.8" r="2.1"/><circle cx="866.4" cy="207.4" r="2.1"/><circle cx="866.4" cy="245.6" r="2.1"/><circle cx="866.4" cy="258.2" r="2.1"/><circle cx="866.4" cy="270.9" r="2.1"/><circle cx="866.4" cy="283.6" r="2.1"/><circle cx="866.4" cy="296.4" r="2.1"/><circle cx="91.7" cy="118.5" r="2.1"/><circle cx="104.4" cy="118.5" r="2.1"/><circle cx="117.1" cy="118.5" r="2.1"/><circle cx="129.8" cy="118.5" r="2.1"/><circle cx="142.5" cy="118.5" r="2.1"/><circle cx="167.9" cy="118.5" r="2.1"/><circle cx="180.6" cy="118.5" r="2.1"/><circle cx="193.3" cy="118.5" r="2.1"/><circle cx="206.0" cy="118.5" r="2.1"/><circle cx="218.7" cy="118.5" r="2.1"/><circle cx="244.1" cy="118.5" r="2.1"/><circle cx="256.8" cy="118.5" r="2.1"/><circle cx="269.5" cy="118.5" r="2.1"/><circle cx="282.2" cy="118.5" r="2.1"/><circle cx="294.9" cy="118.5" r="2.1"/><circle cx="320.3" cy="118.5" r="2.1"/><circle cx="333.0" cy="118.5" r="2.1"/><circle cx="345.7" cy="118.5" r="2.1"/><circle cx="358.4" cy="118.5" r="2.1"/><circle cx="371.1" cy="118.5" r="2.1"/><circle cx="396.5" cy="118.5" r="2.1"/><circle cx="409.2" cy="118.5" r="2.1"/><circle cx="421.9" cy="118.5" r="2.1"/><circle cx="434.6" cy="118.5" r="2.1"/><circle cx="447.3" cy="118.5" r="2.1"/><circle cx="472.7" cy="118.5" r="2.1"/><circle cx="485.4" cy="118.5" r="2.1"/><circle cx="498.1" cy="118.5" r="2.1"/><circle cx="510.8" cy="118.5" r="2.1"/><circle cx="523.5" cy="118.5" r="2.1"/><circle cx="548.9" cy="118.5" r="2.1"/><circle cx="561.6" cy="118.5" r="2.1"/><circle cx="574.3" cy="118.5" r="2.1"/><circle cx="587.0" cy="118.5" r="2.1"/><circle cx="599.7" cy="118.5" r="2.1"/><circle cx="625.1" cy="118.5" r="2.1"/><circle cx="637.8" cy="118.5" r="2.1"/><circle cx="650.5" cy="118.5" r="2.1"/><circle cx="663.2" cy="118.5" r="2.1"/><circle cx="675.9" cy="118.5" r="2.1"/><circle cx="701.3" cy="118.5" r="2.1"/><circle cx="714.0" cy="118.5" r="2.1"/><circle cx="726.7" cy="118.5" r="2.1"/><circle cx="739.4" cy="118.5" r="2.1"/><circle cx="752.1" cy="118.5" r="2.1"/><circle cx="777.5" cy="118.5" r="2.1"/><circle cx="790.2" cy="118.5" r="2.1"/><circle cx="802.9" cy="118.5" r="2.1"/><circle cx="815.6" cy="118.5" r="2.1"/><circle cx="828.3" cy="118.5" r="2.1"/><circle cx="91.7" cy="131.2" r="2.1"/><circle cx="104.4" cy="131.2" r="2.1"/><circle cx="117.1" cy="131.2" r="2.1"/><circle cx="129.8" cy="131.2" r="2.1"/><circle cx="142.5" cy="131.2" r="2.1"/><circle cx="167.9" cy="131.2" r="2.1"/><circle cx="180.6" cy="131.2" r="2.1"/><circle cx="193.3" cy="131.2" r="2.1"/><circle cx="206.0" cy="131.2" r="2.1"/><circle cx="218.7" cy="131.2" r="2.1"/><circle cx="244.1" cy="131.2" r="2.1"/><circle cx="256.8" cy="131.2" r="2.1"/><circle cx="269.5" cy="131.2" r="2.1"/><circle cx="282.2" cy="131.2" r="2.1"/><circle cx="294.9" cy="131.2" r="2.1"/><circle cx="320.3" cy="131.2" r="2.1"/><circle cx="333.0" cy="131.2" r="2.1"/><circle cx="345.7" cy="131.2" r="2.1"/><circle cx="358.4" cy="131.2" r="2.1"/><circle cx="371.1" cy="131.2" r="2.1"/><circle cx="396.5" cy="131.2" r="2.1"/><circle cx="409.2" cy="131.2" r="2.1"/><circle cx="421.9" cy="131.2" r="2.1"/><circle cx="434.6" cy="131.2" r="2.1"/><circle cx="447.3" cy="131.2" r="2.1"/><circle cx="472.7" cy="131.2" r="2.1"/><circle cx="485.4" cy="131.2" r="2.1"/><circle cx="498.1" cy="131.2" r="2.1"/><circle cx="510.8" cy="131.2" r="2.1"/><circle cx="523.5" cy="131.2" r="2.1"/><circle cx="548.9" cy="131.2" r="2.1"/><circle cx="561.6" cy="131.2" r="2.1"/><circle cx="574.3" cy="131.2" r="2.1"/><circle cx="587.0" cy="131.2" r="2.1"/><circle cx="599.7" cy="131.2" r="2.1"/><circle cx="625.1" cy="131.2" r="2.1"/><circle cx="637.8" cy="131.2" r="2.1"/><circle cx="650.5" cy="131.2" r="2.1"/><circle cx="663.2" cy="131.2" r="2.1"/><circle cx="675.9" cy="131.2" r="2.1"/><circle cx="701.3" cy="131.2" r="2.1"/><circle cx="714.0" cy="131.2" r="2.1"/><circle cx="726.7" cy="131.2" r="2.1"/><circle cx="739.4" cy="131.2" r="2.1"/><circle cx="752.1" cy="131.2" r="2.1"/><circle cx="777.5" cy="131.2" r="2.1"/><circle cx="790.2" cy="131.2" r="2.1"/><circle cx="802.9" cy="131.2" r="2.1"/><circle cx="815.6" cy="131.2" r="2.1"/><circle cx="828.3" cy="131.2" r="2.1"/><circle cx="91.7" cy="334.4" r="2.1"/><circle cx="104.4" cy="334.4" r="2.1"/><circle cx="117.1" cy="334.4" r="2.1"/><circle cx="129.8" cy="334.4" r="2.1"/><circle cx="142.5" cy="334.4" r="2.1"/><circle cx="167.9" cy="334.4" r="2.1"/><circle cx="180.6" cy="334.4" r="2.1"/><circle cx="193.3" cy="334.4" r="2.1"/><circle cx="206.0" cy="334.4" r="2.1"/><circle cx="218.7" cy="334.4" r="2.1"/><circle cx="244.1" cy="334.4" r="2.1"/><circle cx="256.8" cy="334.4" r="2.1"/><circle cx="269.5" cy="334.4" r="2.1"/><circle cx="282.2" cy="334.4" r="2.1"/><circle cx="294.9" cy="334.4" r="2.1"/><circle cx="320.3" cy="334.4" r="2.1"/><circle cx="333.0" cy="334.4" r="2.1"/><circle cx="345.7" cy="334.4" r="2.1"/><circle cx="358.4" cy="334.4" r="2.1"/><circle cx="371.1" cy="334.4" r="2.1"/><circle cx="396.5" cy="334.4" r="2.1"/><circle cx="409.2" cy="334.4" r="2.1"/><circle cx="421.9" cy="334.4" r="2.1"/><circle cx="434.6" cy="334.4" r="2.1"/><circle cx="447.3" cy="334.4" r="2.1"/><circle cx="472.7" cy="334.4" r="2.1"/><circle cx="485.4" cy="334.4" r="2.1"/><circle cx="498.1" cy="334.4" r="2.1"/><circle cx="510.8" cy="334.4" r="2.1"/><circle cx="523.5" cy="334.4" r="2.1"/><circle cx="548.9" cy="334.4" r="2.1"/><circle cx="561.6" cy="334.4" r="2.1"/><circle cx="574.3" cy="334.4" r="2.1"/><circle cx="587.0" cy="334.4" r="2.1"/><circle cx="599.7" cy="334.4" r="2.1"/><circle cx="625.1" cy="334.4" r="2.1"/><circle cx="637.8" cy="334.4" r="2.1"/><circle cx="650.5" cy="334.4" r="2.1"/><circle cx="663.2" cy="334.4" r="2.1"/><circle cx="675.9" cy="334.4" r="2.1"/><circle cx="701.3" cy="334.4" r="2.1"/><circle cx="714.0" cy="334.4" r="2.1"/><circle cx="726.7" cy="334.4" r="2.1"/><circle cx="739.4" cy="334.4" r="2.1"/><circle cx="752.1" cy="334.4" r="2.1"/><circle cx="777.5" cy="334.4" r="2.1"/><circle cx="790.2" cy="334.4" r="2.1"/><circle cx="802.9" cy="334.4" r="2.1"/><circle cx="815.6" cy="334.4" r="2.1"/><circle cx="828.3" cy="334.4" r="2.1"/><circle cx="91.7" cy="321.8" r="2.1"/><circle cx="104.4" cy="321.8" r="2.1"/><circle cx="117.1" cy="321.8" r="2.1"/><circle cx="129.8" cy="321.8" r="2.1"/><circle cx="142.5" cy="321.8" r="2.1"/><circle cx="167.9" cy="321.8" r="2.1"/><circle cx="180.6" cy="321.8" r="2.1"/><circle cx="193.3" cy="321.8" r="2.1"/><circle cx="206.0" cy="321.8" r="2.1"/><circle cx="218.7" cy="321.8" r="2.1"/><circle cx="244.1" cy="321.8" r="2.1"/><circle cx="256.8" cy="321.8" r="2.1"/><circle cx="269.5" cy="321.8" r="2.1"/><circle cx="282.2" cy="321.8" r="2.1"/><circle cx="294.9" cy="321.8" r="2.1"/><circle cx="320.3" cy="321.8" r="2.1"/><circle cx="333.0" cy="321.8" r="2.1"/><circle cx="345.7" cy="321.8" r="2.1"/><circle cx="358.4" cy="321.8" r="2.1"/><circle cx="371.1" cy="321.8" r="2.1"/><circle cx="396.5" cy="321.8" r="2.1"/><circle cx="409.2" cy="321.8" r="2.1"/><circle cx="421.9" cy="321.8" r="2.1"/><circle cx="434.6" cy="321.8" r="2.1"/><circle cx="447.3" cy="321.8" r="2.1"/><circle cx="472.7" cy="321.8" r="2.1"/><circle cx="485.4" cy="321.8" r="2.1"/><circle cx="498.1" cy="321.8" r="2.1"/><circle cx="510.8" cy="321.8" r="2.1"/><circle cx="523.5" cy="321.8" r="2.1"/><circle cx="548.9" cy="321.8" r="2.1"/><circle cx="561.6" cy="321.8" r="2.1"/><circle cx="574.3" cy="321.8" r="2.1"/><circle cx="587.0" cy="321.8" r="2.1"/><circle cx="599.7" cy="321.8" r="2.1"/><circle cx="625.1" cy="321.8" r="2.1"/><circle cx="637.8" cy="321.8" r="2.1"/><circle cx="650.5" cy="321.8" r="2.1"/><circle cx="663.2" cy="321.8" r="2.1"/><circle cx="675.9" cy="321.8" r="2.1"/><circle cx="701.3" cy="321.8" r="2.1"/><circle cx="714.0" cy="321.8" r="2.1"/><circle cx="726.7" cy="321.8" r="2.1"/><circle cx="739.4" cy="321.8" r="2.1"/><circle cx="752.1" cy="321.8" r="2.1"/><circle cx="777.5" cy="321.8" r="2.1"/><circle cx="790.2" cy="321.8" r="2.1"/><circle cx="802.9" cy="321.8" r="2.1"/><circle cx="815.6" cy="321.8" r="2.1"/><circle cx="828.3" cy="321.8" r="2.1"/></g>
+<text class="s" x="79.0" y="84" text-anchor="middle">1</text>
+<text class="s" x="129.8" y="84" text-anchor="middle">5</text>
+<text class="s" x="193.3" y="84" text-anchor="middle">10</text>
+<text class="s" x="256.8" y="84" text-anchor="middle">15</text>
+<text class="s" x="320.3" y="84" text-anchor="middle">20</text>
+<text class="s" x="383.8" y="84" text-anchor="middle">25</text>
+<text class="s" x="447.3" y="84" text-anchor="middle">30</text>
+<text class="s" x="510.8" y="84" text-anchor="middle">35</text>
+<text class="s" x="574.3" y="84" text-anchor="middle">40</text>
+<text class="s" x="637.8" y="84" text-anchor="middle">45</text>
+<text class="s" x="701.3" y="84" text-anchor="middle">50</text>
+<text class="s" x="764.8" y="84" text-anchor="middle">55</text>
+<text class="s" x="828.3" y="84" text-anchor="middle">60</text>
+<text class="s" x="866.4" y="84" text-anchor="middle">63</text>
+<text class="s" x="46" y="160.7" text-anchor="middle">a</text>
+<text class="s" x="46" y="173.3" text-anchor="middle">b</text>
+<text class="s" x="46" y="186.1" text-anchor="middle">c</text>
+<text class="s" x="46" y="198.8" text-anchor="middle">d</text>
+<text class="s" x="46" y="211.4" text-anchor="middle">e</text>
+<text class="s" x="46" y="249.6" text-anchor="middle">f</text>
+<text class="s" x="46" y="262.2" text-anchor="middle">g</text>
+<text class="s" x="46" y="274.9" text-anchor="middle">h</text>
+<text class="s" x="46" y="287.6" text-anchor="middle">i</text>
+<text class="s" x="46" y="300.4" text-anchor="middle">j</text>
+<text class="tp" x="893.5" y="122.55">+</text><text class="s" x="893.5" y="135.25">−</text>
+<text class="tp" x="893.5" y="325.75">+</text><text class="s" x="893.5" y="338.45">−</text>
+<rect class="part rfm" x="166.6" y="283.7" width="127.0" height="146.0" rx="1.5"/>
+<rect class="pin" x="177.6" y="293.4" width="6" height="6"/><rect class="pin" x="190.3" y="293.4" width="6" height="6"/><rect class="pin" x="203.0" y="293.4" width="6" height="6"/><rect class="pin" x="215.7" y="293.4" width="6" height="6"/><rect class="pin" x="228.4" y="293.4" width="6" height="6"/><rect class="pin" x="241.1" y="293.4" width="6" height="6"/><rect class="pin" x="253.8" y="293.4" width="6" height="6"/><rect class="pin" x="266.5" y="293.4" width="6" height="6"/><rect class="pin" x="279.2" y="293.4" width="6" height="6"/>
+<circle class="mh" cx="282.2" cy="423.4" r="3"/>
+<circle class="mh" cx="269.5" cy="423.4" r="3"/>
+<circle class="mh" cx="256.8" cy="423.4" r="3"/>
+<circle class="mh" cx="244.1" cy="423.4" r="3"/>
+<circle class="mh" cx="231.4" cy="423.4" r="3"/>
+<circle class="ant" cx="186.9" cy="406.2" r="4"/>
+<text class="tb" x="230.4" y="348.7" text-anchor="middle">RFM95W</text>
+<text class="s" x="230.4" y="364.7" text-anchor="middle">25.4 × 29.2 mm</text>
+<path class="antw" d="M186.9,406.2 H10.0"/>
+<path class="w" d="M6.0,400.2 l8,12 M12.0,400.2 l8,12"/>
+<text class="tl" x="15.0" y="398.2">78 mm wire</text>
+<text class="s" x="256.8" y="441.4" text-anchor="middle">DIO1–5 pads: no header</text>
+<rect class="part esp" x="326.0" y="175.7" width="313.7" height="127.0" rx="3"/>
+<rect class="ant" x="326.0" y="187.1" width="32.5" height="104.3" rx="1"/>
+<rect class="can" x="358.5" y="187.1" width="90.0" height="104.3" rx="1"/>
+<rect class="pin" x="330.0" y="179.1" width="6" height="6"/><rect class="pin" x="342.7" y="179.1" width="6" height="6"/><rect class="pin" x="355.4" y="179.1" width="6" height="6"/><rect class="pin" x="368.1" y="179.1" width="6" height="6"/><rect class="pin" x="380.8" y="179.1" width="6" height="6"/><rect class="pin" x="393.5" y="179.1" width="6" height="6"/><rect class="pin" x="406.2" y="179.1" width="6" height="6"/><rect class="pin" x="418.9" y="179.1" width="6" height="6"/><rect class="pin" x="431.6" y="179.1" width="6" height="6"/><rect class="pin" x="444.3" y="179.1" width="6" height="6"/><rect class="pin" x="457.0" y="179.1" width="6" height="6"/><rect class="pin" x="469.7" y="179.1" width="6" height="6"/><rect class="pin" x="482.4" y="179.1" width="6" height="6"/><rect class="pin" x="495.1" y="179.1" width="6" height="6"/><rect class="pin" x="507.8" y="179.1" width="6" height="6"/><rect class="pin" x="520.5" y="179.1" width="6" height="6"/><rect class="pin" x="533.2" y="179.1" width="6" height="6"/><rect class="pin" x="545.9" y="179.1" width="6" height="6"/><rect class="pin" x="558.6" y="179.1" width="6" height="6"/><rect class="pin" x="571.3" y="179.1" width="6" height="6"/><rect class="pin" x="584.0" y="179.1" width="6" height="6"/><rect class="pin" x="596.7" y="179.1" width="6" height="6"/><rect class="pin off" x="330.0" y="293.4" width="6" height="6"/><rect class="pin off" x="342.7" y="293.4" width="6" height="6"/><rect class="pin off" x="355.4" y="293.4" width="6" height="6"/><rect class="pin off" x="368.1" y="293.4" width="6" height="6"/><rect class="pin off" x="380.8" y="293.4" width="6" height="6"/><rect class="pin off" x="393.5" y="293.4" width="6" height="6"/><rect class="pin off" x="406.2" y="293.4" width="6" height="6"/><rect class="pin off" x="418.9" y="293.4" width="6" height="6"/><rect class="pin off" x="431.6" y="293.4" width="6" height="6"/><rect class="pin off" x="444.3" y="293.4" width="6" height="6"/><rect class="pin off" x="457.0" y="293.4" width="6" height="6"/><rect class="pin off" x="469.7" y="293.4" width="6" height="6"/><rect class="pin off" x="482.4" y="293.4" width="6" height="6"/><rect class="pin off" x="495.1" y="293.4" width="6" height="6"/><rect class="pin off" x="507.8" y="293.4" width="6" height="6"/><rect class="pin off" x="520.5" y="293.4" width="6" height="6"/><rect class="pin off" x="533.2" y="293.4" width="6" height="6"/><rect class="pin off" x="545.9" y="293.4" width="6" height="6"/><rect class="pin off" x="558.6" y="293.4" width="6" height="6"/><rect class="pin off" x="571.3" y="293.4" width="6" height="6"/><rect class="pin off" x="584.0" y="293.4" width="6" height="6"/><rect class="pin off" x="596.7" y="293.4" width="6" height="6"/>
+<rect class="usb" x="603.2" y="184.2" width="41.5" height="45.0" rx="1"/>
+<rect class="usb" x="603.2" y="249.7" width="41.5" height="45.0" rx="1"/>
+<text class="tb" x="490" y="226" text-anchor="middle">ESP32-S3-DevKitC-1</text>
+<text class="s" x="490" y="242" text-anchor="middle">62.74 × 25.40 mm</text>
+<text class="s" x="490" y="258" text-anchor="middle">J1 col c · J3 col j</text>
+<text class="s" x="342.0" y="240.0" text-anchor="middle" transform="rotate(-90 342.0 240.0)">antenna</text>
+<rect class="keep" x="644.7" y="176.7" width="140.0" height="60.0" rx="1"/>
+<text class="tpl" x="714.7" y="210.7" text-anchor="middle">USB-C plug</text>
+<path class="pwr" d="M784.7,206.7 H794.7 V60.0" marker-end="url(#ap)"/>
+<text class="tp" x="804.7" y="50.0">cable → power bank</text>
+<path class="w" d="M60.0,458.0 H885.5" marker-start="url(#af)" marker-end="url(#af)"/>
+<text class="t" x="472.75" y="476.0" text-anchor="middle">breadboard 165.1 mm (6.5 in) × 54.6 mm (2.2 in)</text>
+<text class="s" x="883.5" y="443.0" text-anchor="end">RFM95W hangs 13.3 mm past board edge</text>
+</svg>
+
+
+    <figcaption>Wiring identical to a node's ESP32 ↔ RFM95W wiring (SPI on GPIO8–13, 3V3, GND). Antenna wire vertical.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Antenna wire</td><td>78 mm (¼ wave at 915 MHz), solid-core 22–24 AWG; a cut M-M jumper works. Straight, no coil.</td></tr>
+      <tr><td>Antenna direction</td><td>From the ANT pad along the board edge toward row 1, so it points up when mounted; 52.6 mm extends past the board end. All 5 radios the same way.</td></tr>
+      <tr><td>Clearance</td><td>Keep the wire off metal (gutters, railings, fixtures) and away from the USB cable and power bank.</td></tr>
+      <tr><td>Never transmit without antenna</td><td>Transmitting at 17 dBm into no load can damage the radio. Solder the wire before first power-up.</td></tr>
+      <tr><td>Spares</td><td>7 owned, 5 used, 2 spare.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>Item</b>: what to check. <b>Spec</b>: requirement.</p>
+</section>
+
+<section>
+  <h2>Node mounting at a building corner</h2>
+  <p class="def" style="max-width:80ch">Position comes from comparing loudness between nodes, so every node must be mounted identically: same height, same wall offset, same orientation. A node mounted differently reads louder or quieter and pulls the position estimate.</p>
+  <figure>
+    <svg viewBox="0 0 1000 400" role="img" aria-label="Top view: breadboard flat on the wall face within 20 cm of the outside corner, mics facing out. Side view: board vertical at 2 m or higher, antenna up, power bank below.">
+      <text class="tb" x="30" y="30">Top view (one corner)</text>
+      <path class="bld" d="M60,360 V120 H320"/>
+      <rect x="60" y="120" width="260" height="240" class="box2" stroke="none"/>
+      <text class="s" x="190" y="250" text-anchor="middle">building interior</text>
+      <path class="w" d="M60,120 H320 M60,120 V360" stroke-width="4"/>
+      <rect class="box" x="80" y="104" width="100" height="12" rx="2"/>
+      <text class="t" x="80" y="94">node, flat on wall</text>
+      <path class="w" d="M60,140 H80" marker-start="url(#af)" marker-end="url(#af)"/>
+      <text class="s" x="66" y="160">≤ 20 cm from corner</text>
+      <path class="w" d="M130,100 V60" marker-start="url(#af)"/>
+      <path class="w" d="M40,80 L80,104" marker-start="url(#af)"/>
+      <text class="s" x="140" y="70">sound from outside,</text>
+      <text class="s" x="140" y="84">both faces via corner</text>
+      <text class="s" x="200" y="140">rule: each node on the face</text>
+      <text class="s" x="200" y="154">clockwise from its corner</text>
+
+      <text class="tb" x="460" y="30">Side view</text>
+      <line class="w" x1="520" y1="50" x2="520" y2="380" stroke-width="4"/>
+      <line class="w" x1="480" y1="380" x2="980" y2="380"/>
+      <rect class="box" x="524" y="110" width="10" height="160"/>
+      <circle class="dot-n" cx="540" cy="118" r="5"/><circle class="dot-n" cx="540" cy="262" r="5"/>
+      <text class="t" x="552" y="122">Mic 0, 1 (top)</text>
+      <text class="t" x="552" y="266">Mic 2, 3 (bottom)</text>
+      <path class="lora" d="M540,150 H560 V60"/>
+      <text class="tl" x="568" y="70">antenna vertical, along board edge</text>
+      <rect class="boxp" x="524" y="290" width="60" height="36"/>
+      <text class="tpl" x="592" y="312">power bank</text>
+      <path class="pwr" d="M540,270 V290"/>
+      <path class="w" d="M620,270 V380" marker-start="url(#af)" marker-end="url(#af)"/>
+      <text class="t" x="630" y="330">≥ 2 m, same at all 4 corners</text>
+      <text class="t" x="700" y="160">board 0–2 cm from wall:</text>
+      <text class="s" x="700" y="178">wall adds even +6 dB, no notches</text>
+      <text class="t" x="700" y="208">board 10–50 cm off wall:</text>
+      <text class="s" x="700" y="226">reflection notch at f = c / 4d</text>
+      <text class="s" x="700" y="242">d = 10 cm → 858 Hz · d = 50 cm → 172 Hz</text>
+      <text class="s" x="700" y="258">notches land inside 70–3000 Hz harmonics</text>
+    </svg>
+    <figcaption>Mount flat against the wall, component side out, long axis vertical. Keep clear of exhaust fans, AC units and generators; detector masks steady tones but they raise the noise floor.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Base receiver and radar station</h2>
+  <figure>
+    <svg viewBox="0 -30 1100 330" role="img" aria-label="Base receiver: RFM95W on SPI to ESP32-S3, USB to laptop. Radar station: RD-03D on UART to ESP32-S3, USB to laptop, radar powered from ESP32 5V pin.">
+      <text class="tb" x="30" y="-10">Base receiver (breadboard)</text>
+      <rect class="box" x="30" y="60" width="170" height="100" rx="4"/>
+      <text class="tb" x="45" y="88">RFM95W</text><text class="s" x="45" y="108">same pins as node</text><text class="s" x="45" y="124">VIN 3V3 · GND</text>
+      <path class="w" d="M115,60 V30 M103,14 L115,30 L127,14"/>
+      <line class="lora" x1="150" y1="20" x2="250" y2="20" marker-start="url(#al)"/>
+      <text class="tl" x="160" y="44">from nodes</text>
+      <line class="w" x1="200" y1="110" x2="298" y2="110" marker-start="url(#af)" marker-end="url(#af)"/>
+      <text class="t" x="230" y="100">SPI</text>
+      <rect class="box" x="300" y="60" width="180" height="100" rx="4"/>
+      <text class="tb" x="315" y="88">ESP32-S3</text><text class="s" x="315" y="108">firmware: base_rx</text>
+      <line class="w" x1="390" y1="160" x2="390" y2="240" marker-start="url(#af)" marker-end="url(#af)"/>
+      <line class="pwr" x1="420" y1="240" x2="420" y2="162" marker-end="url(#ap)"/>
+      <text class="t" x="300" y="200">USB</text>
+      <text class="tp" x="430" y="200">5 V</text>
+      <rect class="box2" x="300" y="242" width="180" height="40" rx="4"/><text class="t" x="315" y="267">C2 laptop</text>
+
+      <text class="tb" x="580" y="-10">Radar station (no breadboard)</text>
+      <rect class="box" x="580" y="60" width="170" height="130" rx="4"/>
+      <text class="tb" x="595" y="88">RD-03D</text><text class="s" x="595" y="108">24 GHz, ~8 m</text><text class="s" x="595" y="124">moving targets, ≤3</text><text class="s" x="595" y="140">~10 frames/s</text>
+      <line class="pwr" x1="878" y1="80" x2="752" y2="80" marker-end="url(#ap)"/>
+      <line class="w" x1="752" y1="108" x2="878" y2="108"/>
+      <line class="w" x1="752" y1="136" x2="878" y2="136" marker-end="url(#af)"/>
+      <line class="w" x1="878" y1="164" x2="752" y2="164" marker-end="url(#af)"/>
+      <text class="tp" x="770" y="74">5V ← 5V (VBUS)</text>
+      <text class="s" x="770" y="102">GND — GND</text>
+      <text class="s" x="770" y="130">TX → GPIO17</text>
+      <text class="s" x="770" y="158">RX ← GPIO18</text>
+      <rect class="box" x="880" y="60" width="180" height="130" rx="4"/>
+      <text class="tb" x="895" y="88">ESP32-S3</text><text class="s" x="895" y="108">firmware: radar_bridge</text><text class="s" x="895" y="124">UART 256000 ⇄ USB</text>
+      <text class="s" x="895" y="140">4 F-F jumpers</text>
+      <line class="w" x1="950" y1="190" x2="950" y2="240" marker-end="url(#af)"/>
+      <line class="pwr" x1="990" y1="240" x2="990" y2="192" marker-end="url(#ap)"/>
+      <text class="t" x="900" y="222">USB</text>
+      <text class="tp" x="1000" y="222">5 V</text>
+      <rect class="box2" x="880" y="242" width="180" height="40" rx="4"/><text class="t" x="895" y="267">C2 laptop</text>
+    </svg>
+    <figcaption>RD-03D needs 5 V power and uses 3.3 V logic, so it wires straight to the ESP32-S3 with no level shifter.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Power</h2>
+  <figure>
+    <svg viewBox="0 0 1100 380" role="img" aria-label="Power sources: four USB power banks for the nodes, laptop USB for base receiver, radar station and Pluto, wall outlet for laptop and Jetson.">
+      <rect class="boxp" x="30" y="30" width="230" height="70" rx="4"/>
+      <text class="tb" x="45" y="56">USB power bank ×4</text><text class="tpl" x="45" y="78">not owned · 1 per node</text>
+      <line class="pwr" x1="260" y1="65" x2="498" y2="65" marker-end="url(#ap)"/>
+      <text class="tp" x="300" y="56">5 V USB-C, one each</text>
+      <rect class="box" x="500" y="30" width="560" height="70" rx="4"/>
+      <text class="tb" x="515" y="56">Listening nodes N1–N4</text>
+      <text class="s" x="515" y="78">est. ~0.1 A idle, ~0.2 A while LoRa transmits (RFM95W ~90 mA at 17 dBm)</text>
+
+      <rect class="box" x="30" y="140" width="230" height="130" rx="4"/>
+      <text class="tb" x="45" y="166">C2 laptop USB ports</text><text class="s" x="45" y="188">3 devices → USB hub if</text><text class="s" x="45" y="204">fewer free ports</text>
+      <path class="pwr" d="M260,165 H498" marker-end="url(#ap)"/>
+      <path class="pwr" d="M260,205 H498" marker-end="url(#ap)"/>
+      <path class="pwr" d="M260,245 H498" marker-end="url(#ap)"/>
+      <text class="tp" x="300" y="158">5 V USB-C</text>
+      <text class="tp" x="300" y="198">5 V USB-C → ESP32 5V pin → RD-03D</text>
+      <text class="tp" x="300" y="238">5 V USB-C → Micro-USB (ordered)</text>
+      <rect class="box" x="500" y="145" width="560" height="38" rx="4"/><text class="tb" x="515" y="169">Base receiver</text><text class="s" x="700" y="169">ESP32-S3 + RFM95W (receive)</text>
+      <rect class="box" x="500" y="187" width="560" height="38" rx="4"/><text class="tb" x="515" y="211">Radar station</text><text class="s" x="700" y="211">ESP32-S3 + RD-03D</text>
+      <rect class="box" x="500" y="229" width="560" height="38" rx="4"/><text class="tb" x="515" y="253">Pluto SDR</text><text class="s" x="700" y="253">2nd Micro-USB port for extra power if needed</text>
+
+      <rect class="box" x="30" y="300" width="230" height="60" rx="4"/>
+      <text class="tb" x="45" y="326">Wall outlet</text><text class="s" x="45" y="346">extension cord to C2 table</text>
+      <path class="pwr" d="M260,320 H498" marker-end="url(#ap)"/>
+      <path class="pwr" d="M260,345 H498" marker-end="url(#ap)"/>
+      <rect class="box" x="500" y="302" width="560" height="34" rx="4"/><text class="tb" x="515" y="324">Jetson Orin Nano</text><text class="s" x="700" y="324">19 V DC kit adapter · 7–25 W power modes</text>
+      <rect class="box" x="500" y="340" width="560" height="34" rx="4"/><text class="tb" x="515" y="362">C2 laptop</text><text class="s" x="700" y="362">own charger</text>
+    </svg>
+    <figcaption>Node draw is roughly 1 W. A 10,000 mAh bank (~37 Wh) runs a node for well over a day. Some banks turn off below ~100 mA; pick one with an always-on or low-current mode.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Links</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>From → To</th><th>Medium</th><th>Carries</th><th>Rate</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Node → base receiver</td><td>LoRa 915 MHz, SF7, 500 kHz, sync 0x5E, 17 dBm</td><td>24-byte packet: node id, f0, f0 rate, loudness (dB SPL), score, harmonics, confidence, noise floor, CRC</td><td>~2 s while drone confirmed (+0–0.5 s jitter); heartbeat 30 s</td><td><span class="chip wip">firmware only</span></td></tr>
+      <tr><td>Base receiver → node</td><td>LoRa (same channel)</td><td>HINT: where to listen</td><td>every 4 s per node while needed</td><td><span class="chip wip">firmware only</span></td></tr>
+      <tr><td>Base receiver ⇄ C2</td><td>USB serial</td><td><code>PKT &lt;rssi&gt; &lt;snr&gt; &lt;hex&gt;</code> up · <code>TX &lt;hex&gt;</code> down</td><td>per packet</td><td><span class="chip ok">C2 side done</span></td></tr>
+      <tr><td>RD-03D → bridge ESP32</td><td>UART 256000 baud, 3.3 V</td><td>up to 3 targets: range, angle, speed</td><td>~10 frames/s</td><td><span class="chip wip">parts ~Nov 30</span></td></tr>
+      <tr><td>Bridge → C2</td><td>USB serial → <code>rd03d.py</code> → UDP :47012 (localhost)</td><td><code>radar</code> plots: range, azimuth, elevation, radial velocity</td><td>each scan</td><td><span class="chip no">sender not written</span></td></tr>
+      <tr><td>Jetson → C2</td><td>Ethernet, UDP :47010</td><td><code>visual</code>: tracks, bearing, label (empty = heartbeat)</td><td>5 Hz with tracks, 1 Hz idle</td><td><span class="chip wip">runs on Mac, not Jetson</span></td></tr>
+      <tr><td>C2 → Jetson</td><td>Ethernet, UDP :47011</td><td><code>cue</code> per confirmed track · <code>status</code></td><td>≤1 Hz per track · 1 Hz</td><td><span class="chip ok">C2 side done</span></td></tr>
+      <tr><td>Pluto → C2</td><td>USB</td><td>IQ samples, 2.4 / 5.8 GHz links</td><td>n/a</td><td><span class="chip no">not integrated</span></td></tr>
+      <tr><td>C2 → operator</td><td>browser, localhost</td><td>dashboard :8090, radar scope, map :8080</td><td>live</td><td><span class="chip ok">done</span></td></tr>
+      <tr><td>C2 → TAK</td><td>CoT over UDP</td><td>confirmed tracks</td><td>live</td><td><span class="chip ok">optional</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>From → To</b>: sender and receiver. <b>Medium</b>: physical link and settings. <b>Carries</b>: message content. <b>Rate</b>: how often it is sent. <b>State</b>: current build state.</p>
+</section>
+
+<section>
+  <h2>Parts allocation</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Owned</th><th>In demo</th><th>Spare</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>ESP32-S3-DevKitC-1 N16R8</td><td>10</td><td>6</td><td>4</td><td>4 nodes, base receiver, radar bridge</td></tr>
+      <tr><td>ICS-43434 mic</td><td>28</td><td>16</td><td>12</td><td>4 per node</td></tr>
+      <tr><td>RFM95W 915 MHz</td><td>7</td><td>5</td><td>2</td><td>4 nodes, base receiver</td></tr>
+      <tr><td>Full breadboard</td><td>7</td><td>5</td><td>2</td><td>4 nodes, base receiver</td></tr>
+      <tr><td>M-M jumper wires (40)</td><td>40</td><td>—</td><td>—</td><td>node and base breadboards</td></tr>
+      <tr><td>F-F jumper wires (40)</td><td>40</td><td>4</td><td>36</td><td>RD-03D ↔ ESP32</td></tr>
+      <tr><td>RD-03D radar</td><td>5</td><td>1</td><td>4</td><td>radar station</td></tr>
+      <tr><td>USB-C to Micro-USB cable</td><td>2</td><td>1–2</td><td>0–1</td><td>Pluto SDR (data + aux power)</td></tr>
+      <tr><td>ADALM-Pluto SDR</td><td>1</td><td>1</td><td>0</td><td>C2 table</td></tr>
+      <tr><td>Jetson Orin Nano</td><td>1</td><td>1</td><td>0</td><td>C2 table</td></tr>
+      <tr><td>USB power bank</td><td>0</td><td>4</td><td>—</td><td>one per node (not ordered)</td></tr>
+      <tr><td>Camera for Jetson</td><td>0</td><td>1</td><td>—</td><td>not ordered</td></tr>
+      <tr><td>Antenna wire, 78 mm</td><td>—</td><td>5</td><td>—</td><td>each RFM95W ANT pad</td></tr>
+      <tr><td>Adafruit KB2040</td><td>on hand</td><td>0</td><td>—</td><td>not used (not on order sheets)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def"><b>Owned</b>: received or ordered (orders 1 and 2). <b>In demo</b>: units this layout uses. <b>Spare</b>: owned minus in demo. Budget left ~$182.</p>
+</section>
+
+<section>
+  <h2>Build state</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Unit</th><th>State</th><th>Next step</th></tr></thead>
+    <tbody>
+      <tr><td>N1</td><td><span class="chip wip">on breadboard</span> mics read all zeros</td><td>solder mic headers; check 2-row wire offset; verify with <code>raw</code> console command</td></tr>
+      <tr><td>N2–N4</td><td><span class="chip no">not built</span></td><td>copy N1 once N1 reads audio</td></tr>
+      <tr><td>Base receiver</td><td><span class="chip wip">firmware compiles</span></td><td>build, flash <code>base_rx</code>, receive N1</td></tr>
+      <tr><td>Radar station</td><td><span class="chip wip">firmware compiles</span> parts ~Nov 30 – Dec 1</td><td>wire, run <code>cuas radar</code>, write UDP :47012 sender</td></tr>
+      <tr><td>C2 (sentinel-c2)</td><td><span class="chip ok">runs on simulated sensors</span></td><td>connect real base receiver</td></tr>
+      <tr><td>Camera / Jetson</td><td><span class="chip wip">Visual-Tracker on Mac webcam</span></td><td>camera source for Jetson; port to CUDA</td></tr>
+      <tr><td>Pluto SDR</td><td><span class="chip no">owned, no software</span></td><td>decide demo role</td></tr>
+      <tr><td>Power</td><td><span class="chip no">no power banks</span></td><td>4 banks (team-owned or buy)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="def">Target Dec 8, hard deadline Dec 15.</p>
+</section>
+
+</div>
+
+</body>
+</html>
