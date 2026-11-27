@@ -2,7 +2,9 @@
 
 ESP32-S3-DevKitC-1, four ICS-43434 microphones, RFM95W LoRa radio. Pins match `../config.h`.
 
-View: open https://wokwi.com/projects/new/esp32-s3, create each file below with the same name and contents, then the diagram draws itself. Hover a pin for its name.
+View: https://wokwi.com/projects/481871526837201921. Hover a pin for its name.
+
+To rebuild it: new ESP32-S3 project on wokwi.com, create each file below with the same name and contents.
 
 | File | Content |
 |---|---|
