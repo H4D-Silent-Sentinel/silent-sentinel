@@ -1,6 +1,6 @@
-# Silent Sentinel
+# Sentinel
 
-Passive acoustic sensor network that keeps tracking small drones after they fly behind buildings and drop out of radar, camera and RF coverage.
+Acoustic node for Silent Sentinel. Passive acoustic sensor network that keeps tracking small drones after they fly behind buildings and drop out of radar, camera and RF coverage.
 
 Six listening nodes (ESP32-S3 + 4× ICS-43434 mics + RFM95W LoRa) detect the rotor tone comb and send small reports over LoRa to a base laptop, which estimates position from loudness and tracks the drone with a Kalman filter. All equipment is receive-only on drone frequencies.
 
