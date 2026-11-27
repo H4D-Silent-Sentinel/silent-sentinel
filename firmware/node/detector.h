@@ -24,6 +24,12 @@ class CombDetector {
   bool begin();  // allocates buffers + tables; false on OOM / FFT init failure
   // ch[c] points to HOP new samples for mic c, full-scale units (±1.0).
   FrameResult process(const float *const ch[N_CH]);
+  // C2 re-acquire hint: for the next `frames` frames, re-confirm on HINT_CONFIRM_HITS
+  // hits within F0_TOL of f0_hz. frames == 0 cancels. Port of CombDetector.set_hint.
+  void set_hint(float f0_hz, uint32_t frames) {
+    hint_f0_ = frames ? f0_hz : 0.0f;
+    hint_until_ = frames ? frame_ + frames : 0;
+  }
 
  private:
   void spectrum_db();
@@ -58,4 +64,6 @@ class CombDetector {
 
   uint32_t frame_ = 0;
   bool confirmed_ = false;
+  float hint_f0_ = 0.0f;
+  uint32_t hint_until_ = 0;
 };

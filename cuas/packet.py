@@ -36,6 +36,10 @@ class PktType(IntEnum):
     DETECTION = 1
     HEARTBEAT = 2
     LOST = 3
+    HINT = 4  # downlink, base -> node: "the C2 still has this drone, look for it at f0"
+
+
+HINT_ALL_NODES = 0xFF  # node_id for a broadcast hint
 
 
 FLAG_CONFIRMED = 0x01
@@ -131,3 +135,17 @@ class Packet:
             confidence=f[11],
             floor_db=f[12] / 10,
         )
+
+
+def make_hint(node_id: int, f0_hz: float, hold_s: float, seq: int, confidence: int = 0) -> Packet:
+    """Downlink re-acquire hint for one node (or HINT_ALL_NODES).
+
+    Same 24-byte layout as an uplink packet; fields are reused:
+      node_id     target node (0xFF = all)
+      seq         C2 downlink sequence
+      uptime_ms   how long the hint stays valid on the node, ms (0 cancels a hint)
+      f0_hz       rotor comb spacing to look for
+      confidence  C2 track confidence 0..100 (informational)
+    """
+    return Packet(PktType.HINT, node_id, seq=seq, uptime_ms=int(max(0.0, hold_s) * 1000),
+                  f0_hz=f0_hz, confidence=confidence, flags=FLAG_CONFIRMED)

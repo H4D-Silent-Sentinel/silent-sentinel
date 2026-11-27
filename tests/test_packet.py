@@ -30,3 +30,10 @@ def test_base_rx_line():
     p = parse_rx_line(f"PKT -71 8.5 {hexs}")
     assert p.node_id == 3 and p.rssi == -71 and p.snr == 8.5
     assert parse_rx_line("HELLO silent-sentinel-base v1") is None
+
+
+def test_hint_roundtrip():
+    from cuas.packet import HINT_ALL_NODES, Packet, PktType, make_hint
+    p = Packet.decode(make_hint(HINT_ALL_NODES, 201.5, 12.0, seq=7, confidence=80).encode())
+    assert p.type == PktType.HINT and p.node_id == 0xFF and p.seq == 7
+    assert p.f0_hz == 201.5 and p.uptime_ms == 12000 and p.confidence == 80

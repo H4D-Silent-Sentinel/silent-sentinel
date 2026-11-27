@@ -68,6 +68,7 @@
 #define CONFIRM_WIN  8
 #define CONFIRM_HITS 6
 #define RELEASE_HITS 3
+#define HINT_CONFIRM_HITS 3  // while a C2 hint is active: hits near the hinted f0 needed to re-confirm
 #define F0_TOL       0.10f
 
 #define TONAL_ALPHA  0.001f

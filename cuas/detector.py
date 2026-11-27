@@ -54,6 +54,7 @@ MEDIAN_BINS = 33
 WARMUP_FRAMES = 16
 
 CONFIRM_WIN, CONFIRM_HITS, RELEASE_HITS = 8, 6, 3
+HINT_CONFIRM_HITS = 3  # while a C2 hint is active: hits near the hinted f0 needed to re-confirm
 F0_TOL = 0.10  # relative f0 agreement within the confirm window
 
 TONAL_ALPHA = 0.001  # ~2.5 min to learn a persistent tone
@@ -126,6 +127,8 @@ class CombDetector:
         self.frame = 0
         self.hist = deque(maxlen=max(CONFIRM_WIN, STEADY_WIN))  # (hit, f0)
         self.confirmed = False
+        self.hint_f0 = 0.0  # C2 re-acquire hint (Hz); 0 = none
+        self.hint_until = -1  # last frame the hint applies to
 
     # -- spectrum -----------------------------------------------------------
     def _spectrum_db(self, block: np.ndarray) -> np.ndarray:
@@ -197,10 +200,20 @@ class CombDetector:
             den += h * h
         return num / den if den > 0 else f0
 
+    def set_hint(self, f0_hz: float, frames: int) -> None:
+        """C2 says a drone with this comb spacing is still nearby: for the next `frames`
+        frames, re-confirm on HINT_CONFIRM_HITS hits within F0_TOL of f0_hz."""
+        self.hint_f0 = float(f0_hz) if frames > 0 else 0.0
+        self.hint_until = self.frame + int(frames) if frames > 0 else -1
+
     def _update_confirm(self):
         recent = list(self.hist)[-CONFIRM_WIN:]
         f0s = [f for h, f in recent if h]
-        if not self.confirmed:
+        hinted = self.hint_f0 > 0 and self.frame <= self.hint_until
+        if not self.confirmed and hinted:
+            near = sum(abs(f - self.hint_f0) <= F0_TOL * self.hint_f0 for f in f0s)
+            self.confirmed = near >= HINT_CONFIRM_HITS
+        elif not self.confirmed:
             if len(f0s) >= CONFIRM_HITS:
                 m = float(np.median(f0s))
                 agree = sum(abs(f - m) <= F0_TOL * m for f in f0s)

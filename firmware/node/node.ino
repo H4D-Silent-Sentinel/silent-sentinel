@@ -120,6 +120,34 @@ static void send(PktType type, const FrameResult &r) {
   logf("TX type=%d seq=%u f0=%.1f lvl=%.1f conf=%d\n", type, p.seq, r.f0, r.level_db, r.confidence);
 }
 
+// Downlink from the C2 (via base_rx): re-acquire hints. The radio sits in receive mode
+// between our own transmissions; parsePacket() re-arms it after each send.
+static void apply_hint(float f0, uint32_t hold_ms, const char *from) {
+  uint32_t frames = (uint32_t)(hold_ms / 1000.0f * FRAME_RATE);
+  det.set_hint(f0, frames);
+  logf("HINT from %s: f0=%.1f Hz for %lu ms\n", from, f0, (unsigned long)hold_ms);
+}
+
+static void handle_downlink(const Packet &p, const char *from) {
+  if (!packet_valid(p) || (p.ver_type & 0x0F) != PKT_HINT) return;  // other nodes' uplink: ignore
+  if (p.node_id != node_id && p.node_id != HINT_ALL_NODES) return;
+  apply_hint(p.f0_dhz / 10.0f, p.uptime_ms, from);
+}
+
+static void poll_downlink() {
+  if (!lora_ok) return;
+  int n = LoRa.parsePacket();
+  if (n <= 0) return;
+  Packet p{};
+  int len = 0;
+  while (LoRa.available()) {
+    int b = LoRa.read();
+    if (len < (int)sizeof(p)) ((uint8_t *)&p)[len] = (uint8_t)b;
+    len++;
+  }
+  if (len == (int)sizeof(p)) handle_downlink(p, "C2 radio");
+}
+
 static void console() {
   static String line;
   while (Serial.available() || Serial0.available()) {
@@ -137,6 +165,17 @@ static void console() {
                     lora_ok ? "ok" : "FAIL", FS, N_FFT, LORA_SF, LORA_BW_HZ / 1e3);
     } else if (line == "raw") {
       raw_req = true;
+    } else if (line.startsWith("TX ") && line.length() == 3 + 2 * (int)sizeof(Packet)) {
+      // Same downlink line the C2 writes to base_rx, so a node on USB (no radio) can be cued directly.
+      Packet p{};
+      for (size_t i = 0; i < sizeof(Packet); i++)
+        ((uint8_t *)&p)[i] = (uint8_t)strtoul(line.substring(3 + 2 * i, 5 + 2 * i).c_str(), nullptr, 16);
+      handle_downlink(p, "C2 usb");
+    } else if (line.startsWith("hint ")) {  // bench test: hint <f0_hz> <seconds>
+      int sp = line.indexOf(' ', 5);
+      float f0 = line.substring(5, sp > 0 ? sp : line.length()).toFloat();
+      float sec = sp > 0 ? line.substring(sp + 1).toFloat() : 10.0f;
+      apply_hint(f0, (uint32_t)(sec * 1000), "console");
     } else if (line == "tx") {
       send(PKT_HEARTBEAT, last);
     }
@@ -235,5 +274,6 @@ void loop() {
     send(PKT_HEARTBEAT, r);
     next_heartbeat = now + HEARTBEAT_MS + random(REPORT_JITTER);
   }
+  poll_downlink();
   console();
 }
