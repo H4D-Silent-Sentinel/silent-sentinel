@@ -1,0 +1,23 @@
+{
+  "name": "RFM95W",
+  "author": "Silent Sentinel",
+  "pins": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "G0",
+    "RST",
+    "CS",
+    "MOSI",
+    "MISO",
+    "SCK",
+    "GND",
+    "VIN"
+  ],
+  "controls": []
+}

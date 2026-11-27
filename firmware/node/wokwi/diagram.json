@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "author": "Silent Sentinel",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "id": "esp",
+      "type": "board-esp32-s3-devkitc-1",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "id": "mic0",
+      "type": "chip-ics43434",
+      "top": -120,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "id": "mic1",
+      "type": "chip-ics43434",
+      "top": -10,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "id": "mic2",
+      "type": "chip-ics43434",
+      "top": 100,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "id": "mic3",
+      "type": "chip-ics43434",
+      "top": 210,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "id": "lora",
+      "type": "chip-rfm95w",
+      "top": 340,
+      "left": -420,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "mic0:VDD",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v140"
+      ]
+    ],
+    [
+      "mic0:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v332"
+      ]
+    ],
+    [
+      "mic0:SCK",
+      "esp:4",
+      "orange",
+      [
+        "h73",
+        "v150"
+      ]
+    ],
+    [
+      "mic0:WS",
+      "esp:5",
+      "gold",
+      [
+        "h91",
+        "v150"
+      ]
+    ],
+    [
+      "mic0:SD",
+      "esp:6",
+      "green",
+      [
+        "h109",
+        "v150"
+      ]
+    ],
+    [
+      "mic0:SEL",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v294"
+      ]
+    ],
+    [
+      "mic1:VDD",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v30"
+      ]
+    ],
+    [
+      "mic1:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v222"
+      ]
+    ],
+    [
+      "mic1:SCK",
+      "esp:4",
+      "orange",
+      [
+        "h73",
+        "v40"
+      ]
+    ],
+    [
+      "mic1:WS",
+      "esp:5",
+      "gold",
+      [
+        "h91",
+        "v40"
+      ]
+    ],
+    [
+      "mic1:SD",
+      "esp:6",
+      "green",
+      [
+        "h109",
+        "v40"
+      ]
+    ],
+    [
+      "mic1:SEL",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v-18"
+      ]
+    ],
+    [
+      "mic2:VDD",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v-80"
+      ]
+    ],
+    [
+      "mic2:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v112"
+      ]
+    ],
+    [
+      "mic2:SCK",
+      "esp:7",
+      "orange",
+      [
+        "h127",
+        "v-41"
+      ]
+    ],
+    [
+      "mic2:WS",
+      "esp:15",
+      "gold",
+      [
+        "h145",
+        "v-41"
+      ]
+    ],
+    [
+      "mic2:SD",
+      "esp:16",
+      "green",
+      [
+        "h163",
+        "v-41"
+      ]
+    ],
+    [
+      "mic2:SEL",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v74"
+      ]
+    ],
+    [
+      "mic3:VDD",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v-190"
+      ]
+    ],
+    [
+      "mic3:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v2"
+      ]
+    ],
+    [
+      "mic3:SCK",
+      "esp:7",
+      "orange",
+      [
+        "h127",
+        "v-151"
+      ]
+    ],
+    [
+      "mic3:WS",
+      "esp:15",
+      "gold",
+      [
+        "h145",
+        "v-151"
+      ]
+    ],
+    [
+      "mic3:SD",
+      "esp:16",
+      "green",
+      [
+        "h163",
+        "v-151"
+      ]
+    ],
+    [
+      "mic3:SEL",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v-238"
+      ]
+    ],
+    [
+      "lora:VIN",
+      "esp:3V3.1",
+      "red",
+      [
+        "h37",
+        "v-320"
+      ]
+    ],
+    [
+      "lora:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h55",
+        "v-128"
+      ]
+    ],
+    [
+      "lora:SCK",
+      "esp:12",
+      "orange",
+      [
+        "h181",
+        "v-176"
+      ]
+    ],
+    [
+      "lora:MISO",
+      "esp:13",
+      "blue",
+      [
+        "h199",
+        "v-176"
+      ]
+    ],
+    [
+      "lora:MOSI",
+      "esp:11",
+      "purple",
+      [
+        "h217",
+        "v-204"
+      ]
+    ],
+    [
+      "lora:CS",
+      "esp:10",
+      "cyan",
+      [
+        "h235",
+        "v-224"
+      ]
+    ],
+    [
+      "lora:RST",
+      "esp:9",
+      "white",
+      [
+        "h253",
+        "v-243"
+      ]
+    ],
+    [
+      "lora:G0",
+      "esp:8",
+      "magenta",
+      [
+        "h271",
+        "v-281"
+      ]
+    ]
+  ],
+  "dependencies": {}
+}

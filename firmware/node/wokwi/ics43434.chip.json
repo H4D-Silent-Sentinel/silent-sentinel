@@ -1,0 +1,19 @@
+{
+  "name": "ICS-43434",
+  "author": "Silent Sentinel",
+  "pins": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "SEL",
+    "SD",
+    "WS",
+    "SCK",
+    "GND",
+    "VDD"
+  ],
+  "controls": []
+}
