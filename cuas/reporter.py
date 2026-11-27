@@ -1,6 +1,6 @@
 """Turns per-frame detector results into node packets, with the same cadence as
 the firmware (firmware/node/node.ino): a detection report on confirmation and
-then every ~2 s, a LOST packet when the drone goes away, a heartbeat every 30 s.
+then every ~0.5 s, a LOST packet when the drone goes away, a heartbeat every 30 s.
 Used by the laptop-microphone node (`cuas listen`)."""
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import random
 from .detector import FrameResult
 from .packet import FLAG_CLIPPING, FLAG_CONFIRMED, FLAG_STEADY, Packet, PktType
 
-REPORT_MS, REPORT_JITTER, HEARTBEAT_MS = 2000, 500, 30000
+REPORT_MS, REPORT_JITTER, HEARTBEAT_MS = 500, 100, 30000
 
 
 class Reporter:

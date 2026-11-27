@@ -41,6 +41,8 @@ class CotSender:
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
         self.prefix = prefix
         self.run_id = uuid.uuid4().hex[:6]
+        self.min_interval_s = 0.2  # per track; the fusion loop can run up to ~10 Hz
+        self._last_sent: dict[int, float] = {}
 
     def send(self, data: bytes) -> None:
         try:
@@ -49,6 +51,11 @@ class CotSender:
             pass
 
     def track(self, tr: dict, frame) -> None:
+        import time
+        now = time.monotonic()
+        if now - self._last_sent.get(tr["id"], float("-inf")) < self.min_interval_s:
+            return
+        self._last_sent[tr["id"]] = now
         lat, lon = frame.to_ll(tr["e"], tr["n"])
         name = f"SS-{tr['id']}" + (f" {tr['label']}" if tr.get("label") else "")
         rem = f"sources: {', '.join(tr['sources'])}; f0 {tr['f0']:.0f} Hz" if tr.get("f0") else \

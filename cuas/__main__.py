@@ -38,12 +38,16 @@ def cmd_run(args):
     base.on_track.append(CueSender(base, vis.peers, args.jetson or []))
     print(f"Silent Sentinel base running: {len(site.nodes)} nodes. Ctrl-C to stop.")
     try:
+        last_print = 0.0
         while True:
+            # fuse as soon as data arrives; the 0.1 s timeout also flushes held-back acoustic fixes
+            base.wait_update(0.1)
             snap = base.step()
-            line = " | ".join(f"T{t['id']} ±{t['sigma_m']:.0f}m {'/'.join(t['sources'])}"
-                              for t in snap if t["confirmed"])
-            print(time.strftime("%H:%M:%S"), line or "no tracks", flush=True)
-            time.sleep(1)
+            if time.time() - last_print >= 1.0:
+                last_print = time.time()
+                line = " | ".join(f"T{t['id']} ±{t['sigma_m']:.0f}m {'/'.join(t['sources'])}"
+                                  for t in snap if t["confirmed"])
+                print(time.strftime("%H:%M:%S"), line or "no tracks", flush=True)
     except KeyboardInterrupt:
         pass
 
@@ -115,7 +119,7 @@ def cmd_listen(args):
             now = time.time()
             for pkt in rep.update(r, int((now - t0) * 1000)):
                 base.on_packet(pkt, now)
-            if now - last_step >= 1.0:
+            if now - last_step >= 0.25:
                 base.step(now)
                 last_step = now
             bar = "#" * int(max(0, min(40, r.score * 2)))

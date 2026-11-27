@@ -99,3 +99,43 @@ def test_sim_camera_improves_track():
     a = _sim(cameras=False, seed=1)
     v = _sim(cameras=True, seed=1)
     assert np.median(v[np.isfinite(v)]) < np.median(a[np.isfinite(a)])
+
+
+def test_two_sensors_confirm_on_second_report():
+    tr = Tracker()
+    R = np.eye(2) * 25.0
+    t1 = tr.update_position((10.0, 10.0), R, 0.0, source="acoustic")
+    assert not t1.confirmed
+    t2 = tr.update_position((10.5, 10.2), R, 0.2, source="radar:radar-1")
+    assert t2 is t1 and t2.confirmed  # two different sensors: confirmed without waiting for 3 hits
+
+
+def test_one_sensor_still_needs_three_hits():
+    tr = Tracker()
+    R = np.eye(2) * 25.0
+    t = tr.update_position((10.0, 10.0), R, 0.0, source="acoustic")
+    tr.update_position((10.2, 10.1), R, 0.5, source="acoustic")
+    assert not t.confirmed
+    tr.update_position((10.4, 10.2), R, 1.0, source="acoustic")
+    assert t.confirmed
+
+
+def test_base_signals_new_data_and_paces_acoustic_fixes():
+    from cuas.base import ACOUSTIC_FIX_MIN_S
+    from cuas.packet import FLAG_CONFIRMED, Packet, PktType
+    site = Site.load(SITE)
+    base = Base(site)
+    assert not base.wait_update(0.01)
+    reps = synth_reports(site, 20.0, -15.0)
+    for r in reps:
+        base.on_packet(Packet(PktType.DETECTION, r.node_id, flags=FLAG_CONFIRMED, f0_hz=200.0,
+                              level_db=r.level_db, confidence=70), rx_time=100.0)
+    assert base.wait_update(0.01)  # a packet wakes the fusion loop immediately
+    base.step(100.0)
+    assert len(base.fixes) == 1 and not base.pending
+    base.on_packet(Packet(PktType.DETECTION, reps[0].node_id, flags=FLAG_CONFIRMED, f0_hz=200.0,
+                          level_db=reps[0].level_db, confidence=70), rx_time=100.1)
+    base.step(100.1)  # too soon: held back, not dropped
+    assert len(base.fixes) == 1 and base.pending
+    base.step(100.0 + ACOUSTIC_FIX_MIN_S)
+    assert len(base.fixes) == 2 and not base.pending

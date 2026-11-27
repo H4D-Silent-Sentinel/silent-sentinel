@@ -36,8 +36,8 @@
 #define LORA_TX_DBM    17
 
 // ----------------------------------------------------------- Reporting ----
-#define REPORT_MS      2000   // while confirmed, one detection packet per ~2 s
-#define REPORT_JITTER  500    // + random 0..500 ms so nodes don't sync up
+#define REPORT_MS      500    // while confirmed, one detection packet per ~0.5 s (real-time track updates)
+#define REPORT_JITTER  100    // + random 0..100 ms so nodes don't sync up
 #define HEARTBEAT_MS   30000
 #define DEFAULT_NODE_ID 1     // overridden by `id <n>` on the serial console (stored in NVS)
 

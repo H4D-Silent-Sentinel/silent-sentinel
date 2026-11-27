@@ -62,7 +62,7 @@ class NetworkSim:
     detect_margin_db: float = 8.0
     multipath_sigma_db: float = 3.0
     packet_loss: float = 0.05
-    report_s: float = 2.0
+    report_s: float = 0.5  # matches firmware REPORT_MS
     cam_range_m: float = 150.0
     cam_sigma_deg: float = 0.7
     seed: int = 0
@@ -95,7 +95,7 @@ class NetworkSim:
                     L = best[0] + rng.normal(0, self.multipath_sigma_db)
                     pkt = Packet(PktType.DETECTION, nid, flags=FLAG_CONFIRMED, f0_hz=best[1].f0 + rng.normal(0, 1),
                                  level_db=L, score_db=12, n_harm=8, confidence=70, floor_db=self.floor_db)
-                    next_rep[nid] = t + self.report_s + rng.uniform(0, 0.5)
+                    next_rep[nid] = t + self.report_s + rng.uniform(0, 0.1)
                 elif detecting[nid] and not heard:
                     pkt = Packet(PktType.LOST, nid, floor_db=self.floor_db)
                 elif t >= next_hb[nid]:

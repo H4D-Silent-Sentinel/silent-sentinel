@@ -22,6 +22,7 @@ from .tracker import Tracker
 from .visual import VisualObs
 
 NODE_STALE_S = 75.0  # two missed heartbeats → node shown as offline
+ACOUSTIC_FIX_MIN_S = 0.4  # at most one loudness fix per this interval (nodes report every ~0.5 s)
 
 
 @dataclass
@@ -51,6 +52,24 @@ class Base:
         self.fixes: list[Fix] = []
         self.visual: list[VisualObs] = []
         self._new_acoustic = False
+        self._last_fix_t = float("-inf")
+        self.updated = threading.Event()  # set whenever new sensor data arrives
+
+    # -- real-time loop support ------------------------------------------------
+    def mark_updated(self) -> None:
+        """Inputs call this so a waiting loop fuses right away instead of on a timer."""
+        self.updated.set()
+
+    def wait_update(self, timeout: float) -> bool:
+        """Block until new data arrives or `timeout` s pass. True if data arrived."""
+        got = self.updated.wait(timeout)
+        self.updated.clear()
+        return got
+
+    @property
+    def pending(self) -> bool:
+        """Acoustic reports waiting for the next fix (held back by ACOUSTIC_FIX_MIN_S)."""
+        return self._new_acoustic
 
     # -- inputs ----------------------------------------------------------------
     def on_packet(self, pkt: Packet, rx_time: float | None = None) -> None:
@@ -71,6 +90,7 @@ class Base:
                 ns.detecting = False
             for cb in self.on_node:
                 cb(self.site.nodes.get(pkt.node_id), self._node_str(ns))
+        self.mark_updated()
 
     def on_visual(self, obs: list[VisualObs]) -> None:
         with self.lock:
@@ -94,13 +114,15 @@ class Base:
                 else:
                     self.tracker.update_bearing((o.sensor_e, o.sensor_n), o.az_deg, o.az_sigma_deg,
                                                 o.t, source=f"visual:{o.src}", label=o.label)
+        self.mark_updated()
 
     # -- periodic --------------------------------------------------------------
     def step(self, now: float | None = None) -> list[dict]:
         now = now if now is not None else self.clock()
         with self.lock:
-            if self._new_acoustic:
+            if self._new_acoustic and now - self._last_fix_t >= ACOUSTIC_FIX_MIN_S:
                 self._new_acoustic = False
+                self._last_fix_t = now
                 win = self.site.report_window_s
                 reports = [ns.last_det for ns in self.nodes.values()
                            if ns.detecting and ns.last_det and now - ns.last_det.t <= win

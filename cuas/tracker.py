@@ -29,6 +29,7 @@ GATE_BRG = 10.8  # chi² 1 dof, 99.9 %
 SIGMA_ACCEL = 3.0  # m/s², manoeuvre noise
 INIT_VEL_SIGMA = 15.0
 CONFIRM_HITS = 3
+CONFIRM_SENSORS = 2  # ...or this many different sensors on the same track, whichever comes first
 MAX_COAST_S = 30.0
 MAX_SIGMA_M = 400.0
 F0_ASSOC_TOL = 0.2  # |ln(f0a/f0b)|
@@ -50,7 +51,7 @@ class Track:
 
     @property
     def confirmed(self) -> bool:
-        return self.hits >= CONFIRM_HITS
+        return self.hits >= CONFIRM_HITS or len(self.sources) >= CONFIRM_SENSORS
 
     @property
     def sigma_m(self) -> float:
