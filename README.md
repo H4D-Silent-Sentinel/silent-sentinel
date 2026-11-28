@@ -38,6 +38,8 @@ A node also prints every packet it sends as a `PKT` line, so `python -m cuas run
 
 ## Python
 
+Python 3.10 or newer (`python3 --version`). Dependencies have prebuilt packages for 3.10–3.14 on macOS, Windows and Linux. The `python3` that comes with macOS (Xcode command-line tools) is 3.9 and will not work; install a current Python from python.org or Homebrew.
+
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 ```
