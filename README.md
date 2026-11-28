@@ -64,4 +64,4 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 - [x] Base software: ingest, loudness localization, Kalman tracker, CoT/TAK output, live map
 - [x] Network simulator
 - [x] Jetson interface defined (docs/jetson-interface.md)
-- [ ] Visual-Tracker sends `visual` and reads `cue` (implemented on Visual-Tracker branch `feat/base-link`, not merged to `main`)
+- [x] Visual-Tracker sends `visual` and reads `cue` (Visual-Tracker `base_link.py`)
