@@ -820,8 +820,8 @@ circle.ant{fill:var(--lora);stroke:none}
       <tr><td>Base receiver → node</td><td>LoRa (same channel)</td><td>HINT: where to listen</td><td>every 4 s per node while needed</td><td><span class="chip wip">firmware only</span></td></tr>
       <tr><td>Base receiver ⇄ C2</td><td>USB serial</td><td><code>PKT &lt;rssi&gt; &lt;snr&gt; &lt;hex&gt;</code> up · <code>TX &lt;hex&gt;</code> down</td><td>per packet</td><td><span class="chip ok">C2 side done</span></td></tr>
       <tr><td>RD-03D → radar station ESP32</td><td>UART 256000 baud, 3.3 V</td><td>up to 3 targets: range, angle, speed</td><td>~10 frames/s</td><td><span class="chip wip">parts ~Nov 30</span></td></tr>
-      <tr><td>Radar station → base receiver</td><td>LoRa (same channel as nodes)</td><td>radar plots: up to 3 targets, range, azimuth, radial velocity</td><td>5 Hz with targets, 1 Hz idle</td><td><span class="chip no">firmware not written</span></td></tr>
-      <tr><td>Base receiver → C2</td><td>USB serial → ROAREE <code>radar</code> input</td><td><code>radar</code> plots</td><td>per packet</td><td><span class="chip no">not written</span></td></tr>
+      <tr><td>Radar station → base receiver</td><td>LoRa (same channel as nodes)</td><td>radar plots: up to 3 targets, range, azimuth, radial velocity</td><td>5 Hz with targets, 1 Hz idle</td><td><span class="chip wip">firmware compiles</span></td></tr>
+      <tr><td>Base receiver → C2</td><td>USB serial → ROAREE <code>radar</code> input</td><td><code>radar</code> plots</td><td>per packet</td><td><span class="chip ok">C2 side done</span></td></tr>
       <tr><td>Chaser Jetson → C2</td><td>UDP :47010</td><td><code>visual</code>: tracks, bearing, label (empty = heartbeat)</td><td>5 Hz with tracks, 1 Hz idle</td><td><span class="chip wip">runs on Mac, not Jetson</span></td></tr>
       <tr><td>C2 → chaser Jetson</td><td>UDP :47011</td><td><code>cue</code> per confirmed track · <code>status</code></td><td>≤1 Hz per track · 1 Hz</td><td><span class="chip ok">C2 side done</span></td></tr>
       <tr><td>Pluto → C2</td><td>USB</td><td>IQ samples, 2.4 / 5.8 GHz links</td><td>n/a</td><td><span class="chip no">not integrated</span></td></tr>
@@ -864,7 +864,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <tr><td>N1</td><td><span class="chip wip">on breadboard</span> mics read all zeros</td><td>solder mic headers; check 2-row wire offset; verify with <code>raw</code> console command</td></tr>
       <tr><td>N2–N4</td><td><span class="chip no">not built</span></td><td>copy N1 once N1 reads audio</td></tr>
       <tr><td>Base receiver</td><td><span class="chip wip">firmware compiles</span></td><td>build, flash <code>base_rx</code>, receive N1</td></tr>
-      <tr><td>Radar station</td><td><span class="chip wip">parts ~Nov 30 – Dec 1</span></td><td>build on breadboard; write radar_node firmware (RD-03D → LoRa) and base receiver / ROAREE radar input</td></tr>
+      <tr><td>Radar station</td><td><span class="chip wip">firmware compiles</span> parts ~Nov 30 – Dec 1</td><td>build on breadboard; flash <code>radar_node</code>, set <code>id</code>; add the station to the site file <code>radars</code></td></tr>
       <tr><td>C2 software</td><td><span class="chip ok">runs on simulated sensors</span></td><td>connect real base receiver</td></tr>
       <tr><td>Camera / Jetson</td><td><span class="chip wip">Visual-Tracker on Mac webcam</span></td><td>camera source for Jetson; port to CUDA</td></tr>
       <tr><td>Pluto SDR</td><td><span class="chip no">owned, no software</span></td><td>decide demo role</td></tr>
