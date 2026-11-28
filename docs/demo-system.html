@@ -279,7 +279,7 @@ circle.ant{fill:var(--lora);stroke:none}
 <section>
   <h2>Site layout (top view)</h2>
   <figure>
-    <svg viewBox="0 0 1000 520" role="img" aria-label="Building with a node on each corner, C2 table east of the building, radar beam facing east.">
+    <svg viewBox="0 0 1000 520" role="img" aria-label="Building with a node on each corner, C2 table east of the building, radar station on site with its beam facing east.">
       <!-- compass -->
       <line class="w" x1="60" y1="90" x2="60" y2="40" marker-end="url(#af)"/>
       <text class="tb" x="54" y="110">N</text>
@@ -304,7 +304,9 @@ circle.ant{fill:var(--lora);stroke:none}
       <text class="s" x="560" y="448" text-anchor="middle">SE</text>
       <text class="s" x="200" y="448" text-anchor="middle">SW</text>
       <!-- radar wedge -->
-      <path class="wedge" d="M860,260 L915,165 A110,110 0 0 1 915,355 Z"/>
+      <path class="wedge" d="M880,260 L935,165 A110,110 0 0 1 935,355 Z"/>
+      <rect class="box" x="868" y="250" width="22" height="20" rx="2"/>
+      <text class="s" x="840" y="300">radar station</text>
       <text class="tpl" x="878" y="140">RD-03D beam</text>
       <text class="tpl" x="878" y="384">±60° az · ~8 m</text>
       <!-- C2 table -->
@@ -312,11 +314,10 @@ circle.ant{fill:var(--lora);stroke:none}
       <text class="tb" x="694" y="224">C2 table</text>
       <text class="s" x="694" y="244">laptop</text>
       <text class="s" x="694" y="260">base receiver</text>
-      <text class="s" x="694" y="276">radar station</text>
-      <text class="s" x="694" y="292">Pluto SDR</text>
+      <text class="s" x="694" y="276">Pluto SDR</text>
       <text class="tl" x="590" y="190">LoRa</text>
     </svg>
-    <figcaption>Not to scale. C2 side of the building is a placeholder; radar and Pluto are tethered by USB, so they sit at the C2 table. Radar sees only moving targets inside its beam.</figcaption>
+    <figcaption>Not to scale. C2 side of the building is a placeholder; Pluto is tethered by USB at the C2 table. The radar station stands on its own and reports over LoRa. Radar sees only moving targets inside its beam.</figcaption>
   </figure>
 </section>
 
@@ -734,7 +735,7 @@ circle.ant{fill:var(--lora);stroke:none}
 <section>
   <h2>Base receiver and radar station</h2>
   <figure>
-    <svg viewBox="0 -30 1100 330" role="img" aria-label="Base receiver: RFM95W on SPI to ESP32-S3, USB to laptop. Radar station: RD-03D on UART to ESP32-S3, USB to laptop, radar powered from ESP32 5V pin.">
+    <svg viewBox="0 -30 1100 340" role="img" aria-label="Base receiver: RFM95W on SPI to ESP32-S3, USB to laptop. Radar station on site: RD-03D on UART to ESP32-S3, RFM95W on SPI sending plots over LoRa, powered by a USB power bank.">
       <text class="tb" x="30" y="-10">Base receiver (breadboard)</text>
       <rect class="box" x="30" y="60" width="170" height="100" rx="4"/>
       <text class="tb" x="45" y="88">RFM95W</text><text class="s" x="45" y="108">same pins as node</text><text class="s" x="45" y="124">VIN 3V3 · GND</text>
@@ -751,52 +752,54 @@ circle.ant{fill:var(--lora);stroke:none}
       <text class="tp" x="430" y="200">5 V</text>
       <rect class="box2" x="300" y="242" width="180" height="40" rx="4"/><text class="t" x="315" y="267">C2 laptop</text>
 
-      <text class="tb" x="580" y="-10">Radar station (no breadboard)</text>
+      <text class="tb" x="580" y="-10">Radar station (breadboard, on site)</text>
       <rect class="box" x="580" y="60" width="170" height="130" rx="4"/>
-      <text class="tb" x="595" y="88">RD-03D</text><text class="s" x="595" y="108">24 GHz, ~8 m</text><text class="s" x="595" y="124">moving targets, ≤3</text><text class="s" x="595" y="140">~10 frames/s</text>
+      <text class="tb" x="595" y="88">RD-03D</text><text class="s" x="595" y="108">24 GHz, ~8 m</text><text class="s" x="595" y="124">moving targets, ≤3</text><text class="s" x="595" y="140">~10 frames/s</text><text class="s" x="595" y="156">faces the approach</text>
       <line class="pwr" x1="878" y1="80" x2="752" y2="80" marker-end="url(#ap)"/>
       <line class="w" x1="752" y1="108" x2="878" y2="108"/>
       <line class="w" x1="752" y1="136" x2="878" y2="136" marker-end="url(#af)"/>
       <line class="w" x1="878" y1="164" x2="752" y2="164" marker-end="url(#af)"/>
-      <text class="tp" x="770" y="74">5V ← 5V (VBUS)</text>
-      <text class="s" x="770" y="102">GND — GND</text>
+      <text class="tp" x="770" y="74">5V ← J1-21 5V</text>
+      <text class="s" x="770" y="102">GND — J1-22</text>
       <text class="s" x="770" y="130">TX → GPIO17</text>
       <text class="s" x="770" y="158">RX ← GPIO18</text>
       <rect class="box" x="880" y="60" width="180" height="130" rx="4"/>
-      <text class="tb" x="895" y="88">ESP32-S3</text><text class="s" x="895" y="108">firmware: radar_bridge</text><text class="s" x="895" y="124">UART 256000 ⇄ USB</text>
-      <text class="s" x="895" y="140">4 F-F jumpers</text>
-      <line class="w" x1="950" y1="190" x2="950" y2="240" marker-end="url(#af)"/>
-      <line class="pwr" x1="990" y1="240" x2="990" y2="192" marker-end="url(#ap)"/>
-      <text class="t" x="900" y="222">USB</text>
-      <text class="tp" x="1000" y="222">5 V</text>
-      <rect class="box2" x="880" y="242" width="180" height="40" rx="4"/><text class="t" x="895" y="267">C2 laptop</text>
+      <text class="tb" x="895" y="88">ESP32-S3</text><text class="s" x="895" y="108">firmware: radar_node</text><text class="s" x="895" y="124">UART 256000 from radar</text>
+      <text class="s" x="895" y="140">plots over LoRa, 5 Hz</text><text class="s" x="895" y="156">radar cable → M-M jumpers</text>
+      <rect class="box" x="580" y="220" width="170" height="70" rx="4"/>
+      <text class="tb" x="595" y="246">RFM95W</text><text class="s" x="595" y="266">same pins as node</text><text class="tl" x="595" y="282">LoRa → base receiver</text>
+      <path class="w" d="M752,255 H850 V180 H878" marker-end="url(#af)"/>
+      <text class="t" x="790" y="248">SPI</text>
+      <path class="w" d="M580,240 H548 V212 M536,196 L548,212 L560,196"/>
+      <line class="lora" x1="534" y1="212" x2="504" y2="212" marker-end="url(#al)"/>
+      <line class="pwr" x1="1000" y1="242" x2="1000" y2="192" marker-end="url(#ap)"/>
+      <text class="tp" x="1010" y="222">5 V USB-C</text>
+      <rect class="boxp" x="880" y="242" width="180" height="40" rx="4"/><text class="t" x="895" y="267">USB power bank</text>
     </svg>
-    <figcaption>RD-03D needs 5 V power and uses 3.3 V logic, so it wires straight to the ESP32-S3 with no level shifter.</figcaption>
+    <figcaption>Radar station sits on site within ~8 m of the expected approach and reports to the base receiver over LoRa, on the same channel as the nodes. RD-03D needs 5 V power and uses 3.3 V logic, so it wires straight to the ESP32-S3 with no level shifter. Breadboard layout: <a href="https://h4d-silent-sentinel.github.io/#build" >Build › Radar station</a>.</figcaption>
   </figure>
 </section>
 
 <section>
   <h2>Power</h2>
   <figure>
-    <svg viewBox="0 0 1100 380" role="img" aria-label="Power sources: four USB power banks for the nodes, laptop USB for base receiver, radar station and Pluto, wall outlet for the laptop.">
+    <svg viewBox="0 0 1100 380" role="img" aria-label="Power sources: five USB power banks for the nodes and the radar station, laptop USB for base receiver and Pluto, wall outlet for the laptop.">
       <rect class="boxp" x="30" y="30" width="230" height="70" rx="4"/>
-      <text class="tb" x="45" y="56">USB power bank ×4</text><text class="tpl" x="45" y="78">not owned · 1 per node</text>
+      <text class="tb" x="45" y="56">USB power bank ×5</text><text class="tpl" x="45" y="78">not owned · nodes + radar</text>
       <line class="pwr" x1="260" y1="65" x2="498" y2="65" marker-end="url(#ap)"/>
       <text class="tp" x="300" y="56">5 V USB-C, one each</text>
       <rect class="box" x="500" y="30" width="560" height="70" rx="4"/>
-      <text class="tb" x="515" y="56">Listening nodes N1–N4</text>
+      <text class="tb" x="515" y="56">Nodes N1–N4 · radar station</text>
       <text class="s" x="515" y="78">est. ~0.1 A idle, ~0.2 A while LoRa transmits (RFM95W ~90 mA at 17 dBm)</text>
 
       <rect class="box" x="30" y="140" width="230" height="130" rx="4"/>
-      <text class="tb" x="45" y="166">C2 laptop USB ports</text><text class="s" x="45" y="188">3 devices → USB hub if</text><text class="s" x="45" y="204">fewer free ports</text>
+      <text class="tb" x="45" y="166">C2 laptop USB ports</text><text class="s" x="45" y="188">2 devices → USB hub if</text><text class="s" x="45" y="204">fewer free ports</text>
       <path class="pwr" d="M260,165 H498" marker-end="url(#ap)"/>
-      <path class="pwr" d="M260,205 H498" marker-end="url(#ap)"/>
       <path class="pwr" d="M260,245 H498" marker-end="url(#ap)"/>
       <text class="tp" x="300" y="158">5 V USB-C</text>
-      <text class="tp" x="300" y="198">5 V USB-C → ESP32 5V pin → RD-03D</text>
       <text class="tp" x="300" y="238">5 V USB-C → Micro-USB (ordered)</text>
       <rect class="box" x="500" y="145" width="560" height="38" rx="4"/><text class="tb" x="515" y="169">Base receiver</text><text class="s" x="700" y="169">ESP32-S3 + RFM95W (receive)</text>
-      <rect class="box" x="500" y="187" width="560" height="38" rx="4"/><text class="tb" x="515" y="211">Radar station</text><text class="s" x="700" y="211">ESP32-S3 + RD-03D</text>
+      
       <rect class="box" x="500" y="229" width="560" height="38" rx="4"/><text class="tb" x="515" y="253">Pluto SDR</text><text class="s" x="700" y="253">2nd Micro-USB port for extra power if needed</text>
 
       <rect class="box" x="30" y="300" width="230" height="60" rx="4"/>
@@ -816,8 +819,9 @@ circle.ant{fill:var(--lora);stroke:none}
       <tr><td>Node → base receiver</td><td>LoRa 915 MHz, SF7, 500 kHz, sync 0x5E, 17 dBm</td><td>24-byte packet: node id, f0, f0 rate, loudness (dB SPL), score, harmonics, confidence, noise floor, CRC</td><td>~2 s while drone confirmed (+0–0.5 s jitter); heartbeat 30 s</td><td><span class="chip wip">firmware only</span></td></tr>
       <tr><td>Base receiver → node</td><td>LoRa (same channel)</td><td>HINT: where to listen</td><td>every 4 s per node while needed</td><td><span class="chip wip">firmware only</span></td></tr>
       <tr><td>Base receiver ⇄ C2</td><td>USB serial</td><td><code>PKT &lt;rssi&gt; &lt;snr&gt; &lt;hex&gt;</code> up · <code>TX &lt;hex&gt;</code> down</td><td>per packet</td><td><span class="chip ok">C2 side done</span></td></tr>
-      <tr><td>RD-03D → bridge ESP32</td><td>UART 256000 baud, 3.3 V</td><td>up to 3 targets: range, angle, speed</td><td>~10 frames/s</td><td><span class="chip wip">parts ~Nov 30</span></td></tr>
-      <tr><td>Bridge → C2</td><td>USB serial → <code>rd03d.py</code> → UDP :47012 (localhost)</td><td><code>radar</code> plots: range, azimuth, elevation, radial velocity</td><td>each scan</td><td><span class="chip no">sender not written</span></td></tr>
+      <tr><td>RD-03D → radar station ESP32</td><td>UART 256000 baud, 3.3 V</td><td>up to 3 targets: range, angle, speed</td><td>~10 frames/s</td><td><span class="chip wip">parts ~Nov 30</span></td></tr>
+      <tr><td>Radar station → base receiver</td><td>LoRa (same channel as nodes)</td><td>radar plots: up to 3 targets, range, azimuth, radial velocity</td><td>5 Hz with targets, 1 Hz idle</td><td><span class="chip no">firmware not written</span></td></tr>
+      <tr><td>Base receiver → C2</td><td>USB serial → ROAREE <code>radar</code> input</td><td><code>radar</code> plots</td><td>per packet</td><td><span class="chip no">not written</span></td></tr>
       <tr><td>Chaser Jetson → C2</td><td>UDP :47010</td><td><code>visual</code>: tracks, bearing, label (empty = heartbeat)</td><td>5 Hz with tracks, 1 Hz idle</td><td><span class="chip wip">runs on Mac, not Jetson</span></td></tr>
       <tr><td>C2 → chaser Jetson</td><td>UDP :47011</td><td><code>cue</code> per confirmed track · <code>status</code></td><td>≤1 Hz per track · 1 Hz</td><td><span class="chip ok">C2 side done</span></td></tr>
       <tr><td>Pluto → C2</td><td>USB</td><td>IQ samples, 2.4 / 5.8 GHz links</td><td>n/a</td><td><span class="chip no">not integrated</span></td></tr>
@@ -833,19 +837,19 @@ circle.ant{fill:var(--lora);stroke:none}
   <div class="tbl"><table>
     <thead><tr><th>Part</th><th>Owned</th><th>In demo</th><th>Spare</th><th>Where</th></tr></thead>
     <tbody>
-      <tr><td>ESP32-S3-DevKitC-1 N16R8</td><td>10</td><td>6</td><td>4</td><td>4 nodes, base receiver, radar bridge</td></tr>
+      <tr><td>ESP32-S3-DevKitC-1 N16R8</td><td>10</td><td>6</td><td>4</td><td>4 nodes, base receiver, radar station</td></tr>
       <tr><td>ICS-43434 mic</td><td>28</td><td>16</td><td>12</td><td>4 per node</td></tr>
-      <tr><td>RFM95W 915 MHz</td><td>7</td><td>5</td><td>2</td><td>4 nodes, base receiver</td></tr>
-      <tr><td>Full breadboard</td><td>7</td><td>5</td><td>2</td><td>4 nodes, base receiver</td></tr>
-      <tr><td>M-M jumper wires (40)</td><td>40</td><td>—</td><td>—</td><td>node and base breadboards</td></tr>
-      <tr><td>F-F jumper wires (40)</td><td>40</td><td>4</td><td>36</td><td>RD-03D ↔ ESP32</td></tr>
+      <tr><td>RFM95W 915 MHz</td><td>7</td><td>6</td><td>1</td><td>4 nodes, base receiver, radar station</td></tr>
+      <tr><td>Full breadboard</td><td>7</td><td>6</td><td>1</td><td>4 nodes, base receiver, radar station</td></tr>
+      <tr><td>M-M jumper wires (40)</td><td>40</td><td>—</td><td>—</td><td>node, base and radar station breadboards; 4 into the RD-03D cable sockets</td></tr>
+      <tr><td>F-F jumper wires (40)</td><td>40</td><td>0</td><td>40</td><td>not needed: RD-03D cable + M-M jumpers</td></tr>
       <tr><td>RD-03D radar</td><td>5</td><td>1</td><td>4</td><td>radar station</td></tr>
       <tr><td>USB-C to Micro-USB cable</td><td>2</td><td>1–2</td><td>0–1</td><td>Pluto SDR (data + aux power)</td></tr>
       <tr><td>ADALM-Pluto SDR</td><td>1</td><td>1</td><td>0</td><td>C2 table</td></tr>
       <tr><td>Jetson Orin Nano</td><td>1</td><td>1</td><td>0</td><td>chaser drone (onboard)</td></tr>
-      <tr><td>USB power bank</td><td>0</td><td>4</td><td>—</td><td>one per node (not ordered)</td></tr>
+      <tr><td>USB power bank</td><td>0</td><td>5</td><td>—</td><td>one per node and the radar station (not ordered)</td></tr>
       <tr><td>Camera for Jetson</td><td>0</td><td>1</td><td>—</td><td>not ordered</td></tr>
-      <tr><td>Antenna wire, 78 mm</td><td>—</td><td>5</td><td>—</td><td>each RFM95W ANT pad</td></tr>
+      <tr><td>Antenna wire, 78 mm</td><td>—</td><td>6</td><td>—</td><td>each RFM95W ANT pad</td></tr>
       <tr><td>Adafruit KB2040</td><td>on hand</td><td>0</td><td>—</td><td>not used (not on order sheets)</td></tr>
     </tbody>
   </table></div>
@@ -860,7 +864,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <tr><td>N1</td><td><span class="chip wip">on breadboard</span> mics read all zeros</td><td>solder mic headers; check 2-row wire offset; verify with <code>raw</code> console command</td></tr>
       <tr><td>N2–N4</td><td><span class="chip no">not built</span></td><td>copy N1 once N1 reads audio</td></tr>
       <tr><td>Base receiver</td><td><span class="chip wip">firmware compiles</span></td><td>build, flash <code>base_rx</code>, receive N1</td></tr>
-      <tr><td>Radar station</td><td><span class="chip wip">firmware compiles</span> parts ~Nov 30 – Dec 1</td><td>wire, run <code>cuas radar</code>, write UDP :47012 sender</td></tr>
+      <tr><td>Radar station</td><td><span class="chip wip">parts ~Nov 30 – Dec 1</span></td><td>build on breadboard; write radar_node firmware (RD-03D → LoRa) and base receiver / ROAREE radar input</td></tr>
       <tr><td>C2 software</td><td><span class="chip ok">runs on simulated sensors</span></td><td>connect real base receiver</td></tr>
       <tr><td>Camera / Jetson</td><td><span class="chip wip">Visual-Tracker on Mac webcam</span></td><td>camera source for Jetson; port to CUDA</td></tr>
       <tr><td>Pluto SDR</td><td><span class="chip no">owned, no software</span></td><td>decide demo role</td></tr>
