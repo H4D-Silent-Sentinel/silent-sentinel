@@ -101,13 +101,13 @@ circle.ant{fill:var(--lora);stroke:none}
 
 <header style="display:flex;flex-direction:column;gap:6px">
   <h1>Silent Sentinel Demo System</h1>
-  <p class="sub">One building, 4 listening nodes at the corners, 1 radar, 1 camera tracker, 1 RF receiver, fused at the C2 laptop. Pins and ports from <code>firmware/node/config.h</code>, <code>radar/</code>, <code>roaree</code>.</p>
+  <p class="sub">One building, 4 listening nodes at the corners, 1 radar, 1 camera tracker, 1 RF receiver, fused at the C2. Pins and ports from <code>firmware/node/config.h</code>, <code>radar/</code>, <code>roaree</code>.</p>
 </header>
 
-<section>
+<section id="terms">
   <h2>Terms</h2>
   <dl class="gloss">
-    <div><dt>C2</dt> <dd><b>Command and Control</b>: laptop running the C2 software</dd></div>
+    <div><dt>C2</dt> <dd><b>Command and Control</b>: computer running ROAREE</dd></div>
     <div><dt>LoRa</dt> <dd><b>Long Range</b> radio, 915 MHz</dd></div>
     <div><dt>SF / BW</dt> <dd><b>Spreading Factor / Bandwidth</b> (LoRa settings)</dd></div>
     <div><dt>I2S</dt> <dd><b>Inter-IC Sound</b>: digital audio bus</dd></div>
@@ -132,151 +132,12 @@ circle.ant{fill:var(--lora);stroke:none}
   </dl>
 </section>
 
-<section>
-  <h2>System: units, links, data direction</h2>
-  <div class="legend">
-    <span><i style="border-color:var(--lora);border-top-style:dashed"></i>LoRa radio</span>
-    <span><i style="border-color:var(--usb)"></i>USB / wired data</span>
-    <span><i style="border-color:var(--net)"></i>UDP network</span>
-    <span><i style="border-color:var(--pwr)"></i>power</span>
-    <span><i style="border-color:var(--plan);border-top-style:dashed"></i>not built / not integrated</span>
-  </div>
-  <figure>
-    <svg viewBox="0 0 1200 710" role="img" aria-label="Four listening nodes send LoRa detections to the base receiver, which feeds the C2 laptop over USB. Radar station and Pluto SDR connect to the laptop by USB; Chaser drone Jetson connects over UDP.">
-      <!-- nodes -->
-      <text class="tb" x="30" y="40">Listening nodes ×4 (building corners)</text>
-      <g>
-        <rect class="box" x="30" y="60" width="260" height="112" rx="4"/>
-        <text class="tb" x="45" y="84">N1 · NW corner</text>
-        <text class="t" x="45" y="106">ESP32-S3 N16R8</text>
-        <text class="t" x="45" y="124">4× ICS-43434 mic (I2S)</text>
-        <text class="t" x="45" y="142">RFM95W 915 MHz (SPI)</text>
-        <text class="tp" x="45" y="162">5 V USB-C ← power bank</text>
-        <line class="w" x1="290" y1="115" x2="306" y2="115"/><path class="w" d="M298,115 V98 M290,90 L298,98 L306,90"/>
-      </g>
-      <g>
-        <rect class="box" x="30" y="200" width="260" height="112" rx="4"/>
-        <text class="tb" x="45" y="224">N2 · NE corner</text>
-        <text class="t" x="45" y="246">ESP32-S3 N16R8</text>
-        <text class="t" x="45" y="264">4× ICS-43434 mic (I2S)</text>
-        <text class="t" x="45" y="282">RFM95W 915 MHz (SPI)</text>
-        <text class="tp" x="45" y="302">5 V USB-C ← power bank</text>
-        <path class="w" d="M290,255 H298 V238 M290,230 L298,238 L306,230"/>
-      </g>
-      <g>
-        <rect class="box" x="30" y="340" width="260" height="112" rx="4"/>
-        <text class="tb" x="45" y="364">N3 · SE corner</text>
-        <text class="t" x="45" y="386">ESP32-S3 N16R8</text>
-        <text class="t" x="45" y="404">4× ICS-43434 mic (I2S)</text>
-        <text class="t" x="45" y="422">RFM95W 915 MHz (SPI)</text>
-        <text class="tp" x="45" y="442">5 V USB-C ← power bank</text>
-        <path class="w" d="M290,395 H298 V378 M290,370 L298,378 L306,370"/>
-      </g>
-      <g>
-        <rect class="box" x="30" y="480" width="260" height="112" rx="4"/>
-        <text class="tb" x="45" y="504">N4 · SW corner</text>
-        <text class="t" x="45" y="526">ESP32-S3 N16R8</text>
-        <text class="t" x="45" y="544">4× ICS-43434 mic (I2S)</text>
-        <text class="t" x="45" y="562">RFM95W 915 MHz (SPI)</text>
-        <text class="tp" x="45" y="582">5 V USB-C ← power bank</text>
-        <path class="w" d="M290,535 H298 V518 M290,510 L298,518 L306,510"/>
-      </g>
-      <!-- LoRa links -->
-      <line class="lora" x1="310" y1="95"  x2="448" y2="282" marker-start="url(#al)" marker-end="url(#al)"/>
-      <line class="lora" x1="310" y1="235" x2="448" y2="292" marker-start="url(#al)" marker-end="url(#al)"/>
-      <line class="lora" x1="310" y1="375" x2="448" y2="302" marker-start="url(#al)" marker-end="url(#al)"/>
-      <line class="lora" x1="310" y1="515" x2="448" y2="312" marker-start="url(#al)" marker-end="url(#al)"/>
-      <text class="tl" x="455" y="206">LoRa 915 MHz</text>
-      <text class="tl" x="455" y="222">SF7 · 500 kHz · 17 dBm</text>
-      <text class="tl" x="455" y="372">→ detection / LOST / heartbeat</text>
-      <text class="tl" x="455" y="388">← HINT</text>
-
-      <!-- base receiver -->
-      <rect class="box" x="450" y="240" width="200" height="110" rx="4"/>
-      <text class="tb" x="465" y="264">Base receiver</text>
-      <text class="t" x="465" y="286">RFM95W ⇄ ESP32-S3</text>
-      <text class="s" x="465" y="304">firmware: base_rx</text>
-      <text class="tp" x="465" y="338">5 V from laptop USB</text>
-
-      <!-- base to laptop -->
-      <line class="w" x1="650" y1="295" x2="788" y2="295" marker-start="url(#af)" marker-end="url(#af)"/>
-      <text class="t" x="664" y="284">USB serial</text>
-      <text class="s" x="664" y="314">PKT → · ← TX</text>
-
-      <!-- radar station -->
-      <rect class="box" x="450" y="430" width="200" height="120" rx="4"/>
-      <text class="tb" x="465" y="454">Radar station</text>
-      <text class="t" x="465" y="476">RD-03D 24 GHz</text>
-      <text class="s" x="465" y="494">UART 256000 → ESP32-S3</text>
-      <text class="s" x="465" y="510">bridge (radar_bridge)</text>
-      <text class="tp" x="465" y="538">5 V from laptop USB</text>
-      <line class="w" x1="650" y1="490" x2="788" y2="490" marker-end="url(#af)"/>
-      <text class="t" x="664" y="480">USB serial</text>
-
-      <!-- Pluto -->
-      <rect class="box" x="450" y="580" width="200" height="100" rx="4"/>
-      <text class="tb" x="465" y="604">Pluto SDR (RF)</text>
-      <text class="s" x="465" y="624">drone control/video link</text>
-      <text class="s" x="465" y="640">receive only</text>
-      <text class="tp" x="465" y="668">5 V from laptop USB</text>
-      <line class="plan" x1="650" y1="625" x2="788" y2="625" marker-end="url(#ao)"/>
-      <text class="tpl" x="664" y="615">USB · IQ</text>
-
-      <!-- Jetson -->
-      <rect class="box" x="770" y="30" width="400" height="118" rx="4"/>
-      <text class="tb" x="790" y="54">Chaser drone · Jetson Orin Nano (onboard)</text>
-      <text class="t" x="790" y="76">Visual-Tracker: YOLO11 + ByteTrack + VLM</text>
-      <text class="tpl" x="790" y="96">camera input: none on order</text>
-
-      <!-- laptop -->
-      <rect class="box" x="770" y="190" width="400" height="505" rx="6"/>
-      <text class="tb" x="790" y="214">C2 laptop (Mac)</text>
-      <text class="s" x="790" y="232">C2 software: fusion, tracking, cueing</text>
-      <rect class="box2" x="790" y="250" width="360" height="120" rx="4"/>
-      <text class="tb" x="805" y="274">Fusion</text>
-      <text class="t" x="805" y="296">acoustic loudness localization</text>
-      <text class="t" x="805" y="316">Kalman tracker: acoustic + radar + camera</text>
-      <text class="t" x="805" y="336">HINT downlink to nodes</text>
-      <text class="t" x="805" y="356">cue to camera tracker</text>
-
-      <!-- jetson link -->
-      <line class="net" x1="930" y1="148" x2="930" y2="248" marker-end="url(#an)"/>
-      <line class="net" x1="1060" y1="248" x2="1060" y2="148" marker-end="url(#an)"/>
-      <text class="tn" x="940" y="176">visual</text>
-      <text class="tn" x="940" y="192">UDP :47010</text>
-      <text class="tn" x="1070" y="176">cue, status</text>
-      <text class="tn" x="1070" y="192">UDP :47011</text>
-      <text class="tn" x="830" y="176">datalink</text>
-
-      <!-- radar sender -->
-      <rect class="boxp" x="790" y="460" width="200" height="60" rx="4"/>
-      <text class="tpl" x="805" y="484">radar sender (to write)</text>
-      <text class="s" x="805" y="504">rd03d.py → radar msg</text>
-      <line class="plan" x1="890" y1="460" x2="890" y2="372" marker-end="url(#ao)"/>
-      <text class="tpl" x="898" y="420">UDP :47012</text>
-      <text class="tpl" x="898" y="436">localhost</text>
-
-      <!-- sdr software -->
-      <rect class="boxp" x="790" y="595" width="200" height="60" rx="4"/>
-      <text class="tpl" x="805" y="619">SDR software</text>
-      <text class="s" x="805" y="639">not written</text>
-
-      <!-- outputs -->
-      <line class="w" x1="1080" y1="370" x2="1080" y2="580"/>
-      <rect class="box2" x="1010" y="400" width="140" height="40" rx="4"/>
-      <text class="t" x="1022" y="425">Dashboard :8090</text>
-      <rect class="box2" x="1010" y="460" width="140" height="40" rx="4"/>
-      <text class="t" x="1022" y="485">Map :8080</text>
-      <rect class="box2" x="1010" y="520" width="140" height="40" rx="4"/>
-      <text class="t" x="1022" y="545">CoT → TAK (opt.)</text>
-      <text class="s" x="1010" y="590">outputs (browser / TAK)</text>
-      <text class="tp" x="1010" y="680">laptop charger ← wall</text>
-    </svg>
-    <figcaption>Nodes only talk to the base receiver; the base receiver, radar station and Pluto are USB devices on the laptop. The Jetson is the chaser drone's onboard computer; it reaches the C2 over UDP.</figcaption>
-  </figure>
+<section id="system">
+  <h2>System</h2>
+  <p class="def">Units, links and data direction: <a href="index.html#system">architecture diagram</a>. Rates and ports: <a href="#links">Links</a>.</p>
 </section>
 
-<section>
+<section id="site">
   <h2>Site layout (top view)</h2>
   <figure>
     <svg viewBox="0 0 1000 520" role="img" aria-label="Building with a node on each corner, C2 table east of the building, radar station on site with its beam facing east.">
@@ -312,7 +173,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <!-- C2 table -->
       <rect class="box" x="680" y="200" width="180" height="120" rx="4"/>
       <text class="tb" x="694" y="224">C2 table</text>
-      <text class="s" x="694" y="244">laptop</text>
+      <text class="s" x="694" y="244">computer</text>
       <text class="s" x="694" y="260">base receiver</text>
       <text class="s" x="694" y="276">Pluto SDR</text>
       <text class="tl" x="590" y="190">LoRa</text>
@@ -321,8 +182,9 @@ circle.ant{fill:var(--lora);stroke:none}
   </figure>
 </section>
 
-<section>
+<section id="node-wiring">
   <h2>Listening node: inside one breadboard (×4, identical)</h2>
+  <p class="def">Interactive wiring: <a href="https://wokwi.com/projects/481871526837201921" target="_blank" rel="noopener">Wokwi</a> (hover a pin for its name).</p>
   <figure>
     <svg viewBox="0 0 1100 620" role="img" aria-label="ESP32-S3 with four microphones on two I2S buses, RFM95W radio on SPI, powered by a USB power bank; 3.3 V rail feeds mics and radio.">
       <!-- mics -->
@@ -412,7 +274,7 @@ circle.ant{fill:var(--lora);stroke:none}
   <p class="def"><b>Part pin</b>: label on the breakout board. <b>ESP32-S3 pin</b>: GPIO number on the DevKitC. <b>Signal direction</b>: which side drives the wire.</p>
 </section>
 
-<section>
+<section id="node-layout">
   <h2>Node breadboard layout, to scale</h2>
   <p class="def" style="max-width:85ch">Outlines from the manufacturers' design files: ESP32-S3-DevKitC-1 v1.1 dimension drawing (Espressif), ICS-43434 breakout and RFM95W breakout board files (Adafruit). Breadboard: 830-point, 165.1 × 54.6 mm, 63 rows, 2.54 mm pitch, 7.62 mm center channel. Power rail positions are within ±1 mm (not dimensioned by the maker).</p>
   <figure>
@@ -530,7 +392,7 @@ circle.ant{fill:var(--lora);stroke:none}
   </table></div>
 </section>
 
-<section>
+<section id="lora">
   <h2>LoRa radios (RFM95W ×5)</h2>
   <p class="def" style="max-width:85ch">One RFM95W per node (4) and one in the base receiver. Same part, same pins, same settings: 915 MHz, SF7, 500 kHz, sync 0x5E. The breakout has no antenna; each needs a 78 mm solid wire soldered to the ANT pad. Outline from Adafruit's board file, 10 px = 1 mm.</p>
   <figure>
@@ -599,8 +461,8 @@ circle.ant{fill:var(--lora);stroke:none}
 </svg>
     <figcaption>Component side up, as plugged into the breadboard. Only the 9-pin header plugs in. Blue dot = ANT pad; blue line = antenna wire direction.</figcaption>
   </figure>
-  <h2 style="margin-top:8px">Base receiver breadboard, to scale</h2>
-  <p class="def" style="max-width:85ch">Same ESP32 and RFM95W positions as a node, no mics. Sits at the C2 table, powered and read over USB from the laptop.</p>
+  <h2 id="base-layout" style="margin-top:8px">Base receiver breadboard, to scale</h2>
+  <p class="def" style="max-width:85ch">Same ESP32 and RFM95W positions as a node, no mics. Sits at the C2 table, powered and read over USB from the C2.</p>
   <figure>
 <svg viewBox="0 0 1000 490" role="img" aria-label="Full breadboard drawn to scale, 5 pixels per millimetre, with the mic breakouts, RFM95W and ESP32-S3-DevKitC-1 at their real sizes.">
 <text class="s" x="60" y="20">Scale 5 px = 1 mm · left end = top when mounted · row numbers along top</text>
@@ -686,7 +548,7 @@ circle.ant{fill:var(--lora);stroke:none}
   <p class="def"><b>Item</b>: what to check. <b>Spec</b>: requirement.</p>
 </section>
 
-<section>
+<section id="mounting">
   <h2>Node mounting at a building corner</h2>
   <p class="def" style="max-width:80ch">Position comes from comparing loudness between nodes, so every node must be mounted identically: same height, same wall offset, same orientation. A node mounted differently reads louder or quieter and pulls the position estimate.</p>
   <figure>
@@ -732,10 +594,10 @@ circle.ant{fill:var(--lora);stroke:none}
   </figure>
 </section>
 
-<section>
+<section id="base-radar">
   <h2>Base receiver and radar station</h2>
   <figure>
-    <svg viewBox="0 -30 1100 340" role="img" aria-label="Base receiver: RFM95W on SPI to ESP32-S3, USB to laptop. Radar station on site: RD-03D on UART to ESP32-S3, RFM95W on SPI sending plots over LoRa, powered by a USB power bank.">
+    <svg viewBox="0 -30 1100 340" role="img" aria-label="Base receiver: RFM95W on SPI to ESP32-S3, USB to the C2. Radar station on site: RD-03D on UART to ESP32-S3, RFM95W on SPI sending plots over LoRa, powered by a USB power bank.">
       <text class="tb" x="30" y="-10">Base receiver (breadboard)</text>
       <rect class="box" x="30" y="60" width="170" height="100" rx="4"/>
       <text class="tb" x="45" y="88">RFM95W</text><text class="s" x="45" y="108">same pins as node</text><text class="s" x="45" y="124">VIN 3V3 · GND</text>
@@ -750,7 +612,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <line class="pwr" x1="420" y1="240" x2="420" y2="162" marker-end="url(#ap)"/>
       <text class="t" x="300" y="200">USB</text>
       <text class="tp" x="430" y="200">5 V</text>
-      <rect class="box2" x="300" y="242" width="180" height="40" rx="4"/><text class="t" x="315" y="267">C2 laptop</text>
+      <rect class="box2" x="300" y="242" width="180" height="40" rx="4"/><text class="t" x="315" y="267">C2</text>
 
       <text class="tb" x="580" y="-10">Radar station (breadboard, on site)</text>
       <rect class="box" x="580" y="60" width="170" height="130" rx="4"/>
@@ -776,14 +638,14 @@ circle.ant{fill:var(--lora);stroke:none}
       <text class="tp" x="1010" y="222">5 V USB-C</text>
       <rect class="boxp" x="880" y="242" width="180" height="40" rx="4"/><text class="t" x="895" y="267">USB power bank</text>
     </svg>
-    <figcaption>Radar station sits on site within ~8 m of the expected approach and reports to the base receiver over LoRa, on the same channel as the nodes. RD-03D needs 5 V power and uses 3.3 V logic, so it wires straight to the ESP32-S3 with no level shifter. Breadboard layout: <a href="https://h4d-silent-sentinel.github.io/#build" >Build › Radar station</a>.</figcaption>
+    <figcaption>Radar station sits on site within ~8 m of the expected approach and reports to the base receiver over LoRa, on the same channel as the nodes. RD-03D needs 5 V power and uses 3.3 V logic, so it wires straight to the ESP32-S3 with no level shifter. Breadboard layout: <a href="index.html#build" >Build › Radar station</a>.</figcaption>
   </figure>
 </section>
 
-<section>
+<section id="power">
   <h2>Power</h2>
   <figure>
-    <svg viewBox="0 0 1100 380" role="img" aria-label="Power sources: five USB power banks for the nodes and the radar station, laptop USB for base receiver and Pluto, wall outlet for the laptop.">
+    <svg viewBox="0 0 1100 380" role="img" aria-label="Power sources: five USB power banks for the nodes and the radar station, C2 USB for base receiver and Pluto, wall outlet for the C2.">
       <rect class="boxp" x="30" y="30" width="230" height="70" rx="4"/>
       <text class="tb" x="45" y="56">USB power bank ×5</text><text class="tpl" x="45" y="78">not owned · nodes + radar</text>
       <line class="pwr" x1="260" y1="65" x2="498" y2="65" marker-end="url(#ap)"/>
@@ -793,7 +655,7 @@ circle.ant{fill:var(--lora);stroke:none}
       <text class="s" x="515" y="78">est. ~0.1 A idle, ~0.2 A while LoRa transmits (RFM95W ~90 mA at 17 dBm)</text>
 
       <rect class="box" x="30" y="140" width="230" height="130" rx="4"/>
-      <text class="tb" x="45" y="166">C2 laptop USB ports</text><text class="s" x="45" y="188">2 devices → USB hub if</text><text class="s" x="45" y="204">fewer free ports</text>
+      <text class="tb" x="45" y="166">C2 USB ports</text><text class="s" x="45" y="188">2 devices → USB hub if</text><text class="s" x="45" y="204">fewer free ports</text>
       <path class="pwr" d="M260,165 H498" marker-end="url(#ap)"/>
       <path class="pwr" d="M260,245 H498" marker-end="url(#ap)"/>
       <text class="tp" x="300" y="158">5 V USB-C</text>
@@ -805,13 +667,13 @@ circle.ant{fill:var(--lora);stroke:none}
       <rect class="box" x="30" y="300" width="230" height="60" rx="4"/>
       <text class="tb" x="45" y="326">Wall outlet</text><text class="s" x="45" y="346">extension cord to C2 table</text>
       <path class="pwr" d="M260,345 H498" marker-end="url(#ap)"/>
-      <rect class="box" x="500" y="340" width="560" height="34" rx="4"/><text class="tb" x="515" y="362">C2 laptop</text><text class="s" x="700" y="362">own charger</text>
+      <rect class="box" x="500" y="340" width="560" height="34" rx="4"/><text class="tb" x="515" y="362">C2</text><text class="s" x="700" y="362">own charger</text>
     </svg>
     <figcaption>Node draw is roughly 1 W. A 10,000 mAh bank (~37 Wh) runs a node for well over a day. Some banks turn off below ~100 mA; pick one with an always-on or low-current mode.</figcaption>
   </figure>
 </section>
 
-<section>
+<section id="links">
   <h2>Links</h2>
   <div class="tbl"><table>
     <thead><tr><th>From → To</th><th>Medium</th><th>Carries</th><th>Rate</th><th>State</th></tr></thead>
@@ -832,7 +694,7 @@ circle.ant{fill:var(--lora);stroke:none}
   <p class="def"><b>From → To</b>: sender and receiver. <b>Medium</b>: physical link and settings. <b>Carries</b>: message content. <b>Rate</b>: how often it is sent. <b>State</b>: current build state.</p>
 </section>
 
-<section>
+<section id="parts">
   <h2>Parts allocation</h2>
   <div class="tbl"><table>
     <thead><tr><th>Part</th><th>Owned</th><th>In demo</th><th>Spare</th><th>Where</th></tr></thead>
@@ -856,7 +718,7 @@ circle.ant{fill:var(--lora);stroke:none}
   <p class="def"><b>Owned</b>: received or ordered (orders 1 and 2). <b>In demo</b>: units this layout uses. <b>Spare</b>: owned minus in demo. Budget left ~$182.</p>
 </section>
 
-<section>
+<section id="state">
   <h2>Build state</h2>
   <div class="tbl"><table>
     <thead><tr><th>Unit</th><th>State</th><th>Next step</th></tr></thead>
