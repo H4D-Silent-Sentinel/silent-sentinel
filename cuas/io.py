@@ -5,7 +5,7 @@ import socket
 import threading
 import time
 
-from .packet import Packet
+from .packet import Packet, RadarPacket, decode_any
 from .visual import CUE_PORT, VISUAL_PORT, make_cue, parse_visual
 
 
@@ -14,7 +14,7 @@ def parse_rx_line(line: str) -> Packet | None:
     parts = line.strip().split()
     if len(parts) != 4 or parts[0] != "PKT":
         return None
-    pkt = Packet.decode(bytes.fromhex(parts[3]))
+    pkt = decode_any(bytes.fromhex(parts[3]))
     pkt.rssi, pkt.snr = float(parts[1]), float(parts[2])
     return pkt
 
@@ -41,6 +41,8 @@ def serial_reader(port: str, base, log=print, baud: int = 115200) -> threading.T
                         except ValueError as e:
                             log(f"serial: bad packet ({e}): {line}")
                             continue
+                        if isinstance(pkt, RadarPacket):
+                            continue  # radar station: fused by ROAREE, not by `cuas run`
                         if pkt:
                             base.on_packet(pkt, time.time())
                         elif line:

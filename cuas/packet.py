@@ -2,6 +2,7 @@
 
 Must stay byte-for-byte identical to firmware/node/packet.h.
 All fields little-endian, 24 bytes total, CRC16-CCITT-FALSE over bytes 0..21.
+Type 5 (RADAR) uses its own layout: see RadarPacket.
 
  off  size  field
    0   u8   magic         0xC5
@@ -37,6 +38,7 @@ class PktType(IntEnum):
     HEARTBEAT = 2
     LOST = 3
     HINT = 4  # downlink, base -> node: "the C2 still has this drone, look for it at f0"
+    RADAR = 5  # radar station plots, see RadarPacket
 
 
 HINT_ALL_NODES = 0xFF  # node_id for a broadcast hint
@@ -121,6 +123,8 @@ class Packet:
         ver, typ = f[1] >> 4, f[1] & 0x0F
         if ver != VERSION:
             raise ValueError(f"unsupported version {ver}")
+        if typ == PktType.RADAR:
+            raise ValueError("radar packet: use RadarPacket.decode or decode_any")
         return cls(
             type=PktType(typ),
             node_id=f[2],
@@ -149,3 +153,70 @@ def make_hint(node_id: int, f0_hz: float, hold_s: float, seq: int, confidence: i
     """
     return Packet(PktType.HINT, node_id, seq=seq, uptime_ms=int(max(0.0, hold_s) * 1000),
                   f0_hz=f0_hz, confidence=confidence, flags=FLAG_CONFIRMED)
+
+
+# -- radar station ---------------------------------------------------------------------------
+# off  size  field
+#   0   u8   magic       0xC5
+#   1   u8   ver_type    (version << 4) | 5
+#   2   u8   radar_id
+#   3   u8   n_targets   0..3 (0 = heartbeat)
+#   4   u16  seq
+#   6   3 x  target      i16 x (cm, + = right of boresight), i16 y (cm, forward),
+#                        i8 radial speed (0.25 m/s, + = moving away)
+#  21   u8   reserved
+#  22   u16  crc
+_RADAR_FMT = "<BBBBH" + "hhb" * 3 + "BH"
+assert struct.calcsize(_RADAR_FMT) == SIZE
+RADAR_MAX_TARGETS = 3
+
+
+@dataclass
+class RadarPlot:
+    x_m: float
+    y_m: float
+    speed_mps: float
+
+
+@dataclass
+class RadarPacket:
+    radar_id: int
+    seq: int = 0
+    targets: list[RadarPlot] = field(default_factory=list)
+    rx_time: float = 0.0
+    rssi: float | None = None
+    snr: float | None = None
+    type: PktType = PktType.RADAR
+
+    def encode(self) -> bytes:
+        vals = []
+        for k in range(RADAR_MAX_TARGETS):
+            if k < len(self.targets):
+                p = self.targets[k]
+                vals += [_clamp(p.x_m * 100, -32768, 32767), _clamp(p.y_m * 100, -32768, 32767),
+                         _clamp(p.speed_mps * 4, -128, 127)]
+            else:
+                vals += [0, 0, 0]
+        body = struct.pack(_RADAR_FMT[:-1], MAGIC, (VERSION << 4) | PktType.RADAR, self.radar_id & 0xFF,
+                           min(len(self.targets), RADAR_MAX_TARGETS), self.seq & 0xFFFF, *vals, 0)
+        return body + struct.pack("<H", crc16(body))
+
+    @classmethod
+    def decode(cls, data: bytes) -> "RadarPacket":
+        if len(data) != SIZE:
+            raise ValueError(f"bad length {len(data)} (want {SIZE})")
+        f = struct.unpack(_RADAR_FMT, data)
+        if f[0] != MAGIC or f[1] != (VERSION << 4) | PktType.RADAR:
+            raise ValueError("not a radar packet")
+        if crc16(data[:-2]) != f[-1]:
+            raise ValueError("bad crc")
+        n = min(f[3], RADAR_MAX_TARGETS)
+        tg = [RadarPlot(f[5 + 3 * k] / 100, f[6 + 3 * k] / 100, f[7 + 3 * k] / 4) for k in range(n)]
+        return cls(radar_id=f[2], seq=f[4], targets=tg)
+
+
+def decode_any(data: bytes) -> "Packet | RadarPacket":
+    """Decode a received LoRa payload of either layout."""
+    if len(data) == SIZE and data[1] & 0x0F == PktType.RADAR:
+        return RadarPacket.decode(data)
+    return Packet.decode(data)

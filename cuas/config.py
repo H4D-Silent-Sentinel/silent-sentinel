@@ -30,11 +30,24 @@ class Camera:
 
 
 @dataclass
+class Radar:
+    id: int  # radar_id in its LoRa packets
+    lat: float
+    lon: float
+    yaw_deg: float = 0.0  # boresight azimuth, degrees true (0 = north, 90 = east)
+    height_m: float = 1.0
+    flip_x: bool = False  # mirror left/right if targets move the wrong way
+    max_range_m: float = 8.0
+    label: str = ""
+
+
+@dataclass
 class Site:
     name: str
     origin: tuple[float, float]
     nodes: dict[int, Node]
     cameras: dict[str, Camera] = field(default_factory=dict)
+    radars: dict[int, Radar] = field(default_factory=dict)
     drone_alt_m: float = 40.0  # assumed altitude for loudness localization
     source_level_db: float = 85.0  # prior on drone band level at 1 m (dB SPL)
     source_level_sigma_db: float = 10.0
@@ -53,7 +66,8 @@ class Site:
             node.e, node.n = frame.to_en(node.lat, node.lon)
             nodes[node.id] = node
         cams = {c["id"]: Camera(**c) for c in d.get("cameras", [])}
+        radars = {r["id"]: Radar(**r) for r in d.get("radars", [])}
         knobs = {k: d[k] for k in ("drone_alt_m", "source_level_db", "source_level_sigma_db",
                                    "level_sigma_db", "atten_db_per_m", "report_window_s") if k in d}
         return cls(name=d.get("name", Path(path).stem), origin=tuple(d["origin"]), nodes=nodes,
-                   cameras=cams, frame=frame, **knobs)
+                   cameras=cams, radars=radars, frame=frame, **knobs)
